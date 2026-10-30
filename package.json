@@ -10,18 +10,21 @@
 	"scripts": {
 		"dev": "node --conditions=development --env-file-if-exists=.env --watch --import tsx src/server.ts",
 		"db:migrate": "node --conditions=development --import tsx scripts/migrate.ts",
+		"db:migrate:turso": "node --conditions=development --env-file=.env.turso-import --import tsx scripts/migrate.ts",
 		"instagram:check": "node --conditions=development --env-file-if-exists=.env --import tsx scripts/instagram-access.ts",
 		"import:instagram": "node --conditions=development --env-file-if-exists=.env --import tsx scripts/import-instagram.ts",
+		"import:instagram:turso": "node --conditions=development --env-file=.env.turso-import --import tsx scripts/import-instagram.ts",
 		"r2:restore": "node --conditions=development --env-file-if-exists=.env --import tsx scripts/r2-restore.ts",
 		"typecheck": "tsc --noEmit",
-		"lint": "biome check src scripts tests package.json tsconfig.json tsconfig.build.json vitest.config.ts playwright.config.ts",
+		"lint": "biome check src scripts tests app.js vercel.json package.json tsconfig.json tsconfig.build.json vitest.config.ts playwright.config.ts",
 		"test": "vitest run",
 		"test:coverage": "vitest run --coverage",
 		"test:e2e": "playwright test",
+		"test:production": "node --test tests/production.test.mjs",
 		"build": "tsc -p tsconfig.build.json",
 		"build:gallery": "node --conditions=development --import tsx scripts/build-gallery.ts",
 		"start": "node dist/server.js",
-		"verify": "npm run typecheck && npm run lint && npm run test:coverage && npm run build && npm run test:e2e"
+		"verify": "npm run typecheck && npm run lint && npm run test:coverage && npm run build && npm run test:production && npm run test:e2e"
 	},
 	"dependencies": {
 		"@aws-sdk/client-s3": "3.1160.0",

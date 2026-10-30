@@ -1,6 +1,6 @@
 import { access } from "node:fs/promises";
 import { createClient } from "@libsql/client";
-import { environment } from "../src/env.js";
+import { databaseEnvironment } from "../src/env.js";
 import { importInstagram } from "../src/instagram-import.js";
 import { r2Address, r2Client } from "../src/r2-reader.js";
 import { putImmutable, verifyObject } from "./r2-store.js";
@@ -25,9 +25,9 @@ try {
 	}
 	if (!process.env.DATABASE_URL)
 		throw new Error(
-			"Set DATABASE_URL to an existing local SQLite database; see docs/instagram-access.md.",
+			"Set DATABASE_URL to a migrated SQLite or Turso database; see docs/instagram-access.md.",
 		);
-	const { databaseUrl } = environment(process.env);
+	const config = databaseEnvironment(process.env);
 	let putImage:
 		| ((filename: string, bytes: Buffer) => Promise<void>)
 		| undefined;
@@ -54,12 +54,12 @@ try {
 			}
 		};
 	}
-	await access(databaseUrl.slice(5));
-	const db = createClient({ url: databaseUrl });
+	if (config.url.startsWith("file:")) await access(config.url.slice(5));
+	const db = createClient(config);
 	try {
 		await db.execute("SELECT id FROM import_runs LIMIT 1");
 		console.log(
-			`Local database: ${databaseUrl}; mode: ${dryRun ? "dry run" : "import"}`,
+			`Database: ${config.url}; mode: ${dryRun ? "dry run" : "import"}`,
 		);
 		const run = dryRun
 			? undefined
