@@ -66,7 +66,11 @@ describe("public response protections", () => {
 			const html = await response.text();
 			document.documentElement.innerHTML = html;
 			expect(document.querySelector("h1 script")).toBeNull();
-			expect(document.querySelectorAll("script")).toHaveLength(1);
+			expect(
+				[...document.querySelectorAll("script")].every(
+					(script) => script.src && !script.textContent,
+				),
+			).toBe(true);
 			expect(document.querySelector("h1")?.textContent).toBe(
 				"<script>alert(1)</script>",
 			);
@@ -164,6 +168,43 @@ it("uses the stored aspect ratio and responsive preview for a post image", async
 		expect(img.getAttribute("width")).toBe("427");
 		expect(img.getAttribute("height")).toBe("640");
 		expect(img.getAttribute("srcset")).toBe(`${preview} 427w, ${full} 800w`);
+	} finally {
+		db.close();
+	}
+});
+
+it("uses an honest per-image fallback without overwriting owner descriptions", async () => {
+	const db = createClient({ url: "file::memory:" });
+	try {
+		await migrate(db);
+		await db.execute({
+			sql: "INSERT INTO posts VALUES (?,?,?,?)",
+			args: ["fallback", "Levyn nimi", "2026-01-01", "Teksti"],
+		});
+		await db.execute({
+			sql: "INSERT INTO images VALUES (?,?,?,?),(?,?,?,?)",
+			args: [
+				"fallback",
+				1,
+				`/media/${"a".repeat(64)}.jpg`,
+				"Julkaisun kuva 1",
+				"fallback",
+				2,
+				`/media/${"b".repeat(64)}.jpg`,
+				"Omistajan kuvaus",
+			],
+		});
+		document.documentElement.innerHTML = await (
+			await createApp(db).request("/posts/fallback")
+		).text();
+		expect(
+			within(document.body).getByRole("img", {
+				name: "Julkaisun Levyn nimi kuva 1 / 2",
+			}),
+		).toBeTruthy();
+		expect(
+			within(document.body).getByRole("img", { name: "Omistajan kuvaus" }),
+		).toBeTruthy();
 	} finally {
 		db.close();
 	}

@@ -19,8 +19,9 @@ const Layout: FC<
 		canonical?: string;
 		description?: string;
 		archive?: boolean;
+		gallery?: boolean;
 	}>
-> = ({ title, canonical, description, archive, children }) => (
+> = ({ title, canonical, description, archive, gallery, children }) => (
 	<html lang={locale.language}>
 		<head>
 			<meta charSet="utf-8" />
@@ -28,8 +29,9 @@ const Layout: FC<
 			<meta name="description" content={description || m.defaultDescription} />
 			<title>{title} | Klamydiakokoelma</title>
 			{canonical && <link rel="canonical" href={canonical} />}
-			<link rel="stylesheet" href="/assets/style-0a80e625.css" />
+			<link rel="stylesheet" href="/assets/style-0319f524.css" />
 			<script src="/assets/images-cc5a7637.js" defer></script>
+			{gallery && <script src="/assets/gallery-e3a23810.js" defer></script>}
 			{archive && (
 				<>
 					<script src="/assets/htmx-d6fdc75f.js" defer></script>
@@ -419,8 +421,10 @@ export function createApp(
 			String(post.description),
 		);
 		const permalink = String(post.permalink ?? "");
+		const galleryImages = images.filter((image) => validMedia(image.url));
 		return c.html(
 			<Layout
+				gallery={galleryImages.length > 0}
 				title={String(post.title)}
 				canonical={`${siteUrl}/posts/${encodeURIComponent(String(post.slug))}`}
 				description={reading.text.slice(0, 160)}
@@ -431,13 +435,24 @@ export function createApp(
 					<time dateTime={String(post.published_at)}>
 						{formatDate(String(post.published_at))}
 					</time>
-					<h2 class="section-title">{m.images}</h2>
-					<div class="gallery">
-						{images
-							.filter((image) =>
-								/^\/media\/[a-f0-9]{64}\.jpg$/.test(String(image.url)),
-							)
-							.map((image) => {
+					<h2 class="section-title" id="gallery-heading">
+						{m.images}
+					</h2>
+					<section
+						class="gallery"
+						aria-labelledby="gallery-heading"
+						data-previous={m.galleryPrevious}
+						data-next={m.galleryNext}
+						data-status={m.galleryStatus}
+						data-thumbnail={m.galleryThumbnail}
+						data-dialog={m.galleryDialog}
+						data-enlarge={m.galleryEnlarge}
+						data-close={m.galleryClose}
+						data-original={m.galleryOriginal}
+						data-unavailable={m.coverMissing}
+					>
+						<ol class="gallery-slides">
+							{galleryImages.map((image, index) => {
 								const url = String(image.url);
 								const preview = validMedia(image.preview_url)
 									? image.preview_url
@@ -450,27 +465,50 @@ export function createApp(
 										: 0;
 								const previewWidth = scale ? Math.round(width * scale) : 0;
 								const previewHeight = scale ? Math.round(height * scale) : 0;
+								const existingAlt = String(image.alt).trim();
+								const alt =
+									!existingAlt || /^Julkaisun kuva \d+$/.test(existingAlt)
+										? m.galleryAlt(
+												String(post.title),
+												index + 1,
+												galleryImages.length,
+											)
+										: existingAlt;
 								return (
-									<a class="gallery-image" href={url}>
-										<img
-											data-image-fallback
-											data-fallback-label={m.coverMissing}
-											src={preview}
-											alt={String(image.alt)}
-											width={previewWidth || undefined}
-											height={previewHeight || undefined}
-											srcSet={
-												preview !== url && previewWidth && previewWidth < width
-													? `${preview} ${previewWidth}w, ${url} ${width}w`
+									<li class="gallery-slide">
+										<a
+											class="gallery-image"
+											href={url}
+											data-alt={alt}
+											data-preview={
+												validMedia(image.preview_url)
+													? image.preview_url
 													: undefined
 											}
-											sizes="(max-width: 700px) 100vw, 32rem"
-											loading="lazy"
-										/>
-									</a>
+										>
+											<img
+												data-image-fallback
+												data-fallback-label={m.coverMissing}
+												src={preview}
+												alt={alt}
+												width={previewWidth || undefined}
+												height={previewHeight || undefined}
+												srcSet={
+													preview !== url &&
+													previewWidth &&
+													previewWidth < width
+														? `${preview} ${previewWidth}w, ${url} ${width}w`
+														: undefined
+												}
+												sizes="(max-width: 700px) 100vw, 32rem"
+												loading={index === 0 ? "eager" : "lazy"}
+											/>
+										</a>
+									</li>
 								);
 							})}
-					</div>
+						</ol>
+					</section>
 					<p class="description">{reading.text}</p>
 					{tags.length > 0 && (
 						<ul class="tags" aria-label={m.tags}>

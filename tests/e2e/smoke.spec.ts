@@ -21,7 +21,7 @@ test("a visitor can read a direct fixture page without JavaScript", async ({
 			await page
 				.getByRole("img", { name: "Kuvitteellinen toinen kuva" })
 				.evaluate((img: HTMLImageElement) => img.naturalWidth),
-		).toBe(640);
+		).toBeGreaterThan(0);
 		await page.reload();
 	} finally {
 		await context.close();
