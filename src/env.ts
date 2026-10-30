@@ -1,5 +1,5 @@
 export function environment(env: NodeJS.ProcessEnv) {
-	const databaseUrl = env.DATABASE_URL ?? "file:.data/demo.db";
+	const databaseUrl = env.DATABASE_URL ?? "file:.data/collection.db";
 	if (
 		!databaseUrl.startsWith("file:") ||
 		databaseUrl.includes("?") ||

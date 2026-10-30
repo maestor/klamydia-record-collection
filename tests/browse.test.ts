@@ -24,6 +24,9 @@ describe("collection browsing", () => {
 			expect(response.status).toBe(200);
 			document.documentElement.innerHTML = await response.text();
 			expect(
+				within(document.body).getByText(/Arkisto sisältää esimerkkisisältöä/),
+			).toBeTruthy();
+			expect(
 				within(document.body)
 					.getByRole("link", { name: "Esimerkki 27" })
 					.getAttribute("href"),
