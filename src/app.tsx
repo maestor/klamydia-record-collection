@@ -62,7 +62,11 @@ const PostList: FC<{ posts: Row[]; page?: number }> = ({ posts, page }) =>
 	) : (
 		<p>Julkaisuja ei vielä ole.</p>
 	);
-export function createApp(db: Client, siteUrl = "http://localhost:3000") {
+export function createApp(
+	db: Client,
+	siteUrl = "http://localhost:3000",
+	media?: { endpoint: string; sign: (filename: string) => Promise<string> },
+) {
 	const app = new Hono<{ Variables: { demo: boolean } }>();
 	app.use("*", async (c, next) => {
 		if (
@@ -81,7 +85,7 @@ export function createApp(db: Client, siteUrl = "http://localhost:3000") {
 		await next();
 		c.header(
 			"Content-Security-Policy",
-			"default-src 'none'; img-src 'self'; style-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'",
+			`default-src 'none'; img-src 'self'${media ? ` ${media.endpoint}` : ""}; style-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'`,
 		);
 		c.header("X-Content-Type-Options", "nosniff");
 		c.header("Referrer-Policy", "strict-origin-when-cross-origin");
@@ -94,6 +98,22 @@ export function createApp(db: Client, siteUrl = "http://localhost:3000") {
 					: "public, max-age=0, s-maxage=300, stale-while-revalidate=60",
 		);
 	});
+	if (media)
+		app.get("/media/:filename", async (c) => {
+			const filename = c.req.param("filename");
+			if (!/^[a-f0-9]{64}\.jpg$/.test(filename)) return c.notFound();
+			const path = `/media/${filename}`;
+			const found = await db.execute({
+				sql: "SELECT 1 FROM images WHERE url = ? UNION ALL SELECT 1 FROM instagram_images WHERE preview_url = ? LIMIT 1",
+				args: [path, path],
+			});
+			if (!found.rows.length) return c.notFound();
+			try {
+				return c.redirect(await media.sign(filename), 302);
+			} catch {
+				return c.text("Image temporarily unavailable", 503);
+			}
+		});
 	app.get("/", async (c) => {
 		const posts = await db.execute(
 			"SELECT slug, title, published_at FROM posts ORDER BY published_at DESC, slug DESC LIMIT 6",

@@ -15,6 +15,7 @@ type Options = {
 	limit?: number;
 	mediaId?: string;
 	dryRun?: boolean;
+	putImage?: (filename: string, bytes: Buffer) => Promise<void>;
 };
 
 export async function importInstagram({
@@ -26,6 +27,7 @@ export async function importInstagram({
 	limit,
 	mediaId,
 	dryRun = false,
+	putImage,
 }: Options) {
 	if (
 		limit !== undefined &&
@@ -170,7 +172,8 @@ export async function importInstagram({
 			}
 			async function storeImage(bytes: Buffer) {
 				const filename = `${createHash("sha256").update(bytes).digest("hex")}.jpg`;
-				if (!dryRun) {
+				if (!dryRun && putImage) await putImage(filename, bytes);
+				else if (!dryRun) {
 					await mkdir(mediaDir, { recursive: true });
 					const temp = join(mediaDir, `.staging-${randomUUID()}`);
 					await writeFile(temp, bytes, { flag: "wx" });
