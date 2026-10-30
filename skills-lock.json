@@ -1,0 +1,41 @@
+{
+	"version": 1,
+	"skills": {
+		"accessibility-first-ui": {
+			"source": "maestor/agent-skills",
+			"sourceType": "github",
+			"skillPath": "skills/accessibility-first-ui/SKILL.md",
+			"computedHash": "cf5c890a9509da7faad48ed3dd0471150befbc6c87ba9647be8b05464f0dce12"
+		},
+		"browser-ui-verification": {
+			"source": "maestor/agent-skills",
+			"sourceType": "github",
+			"skillPath": "skills/browser-ui-verification/SKILL.md",
+			"computedHash": "28b21dabcf384eb8bb6fb4c0e472a05da4d9ea155ebc871ba00406cf8e7f8a1c"
+		},
+		"git-pr-workflow": {
+			"source": "maestor/agent-skills",
+			"sourceType": "github",
+			"skillPath": "skills/git-pr-workflow/SKILL.md",
+			"computedHash": "c353dd79adcf41e6e9ee157d4bfbe3d753adabdc058e16b504ef1dff3610e1a4"
+		},
+		"intelligence-testing": {
+			"source": "maestor/agent-skills",
+			"sourceType": "github",
+			"skillPath": "skills/intelligence-testing/SKILL.md",
+			"computedHash": "fa2a6b3c383c6400d4c1a7f593d06cda9ae41284e8bcb3a585db7e6e2d0ec2ee"
+		},
+		"local-first-verification": {
+			"source": "maestor/agent-skills",
+			"sourceType": "github",
+			"skillPath": "skills/local-first-verification/SKILL.md",
+			"computedHash": "faf7380a5e2c35402ff699534a1d84948ec3c230b71e79d8a5472105aa3afa12"
+		},
+		"project-documentation": {
+			"source": "maestor/agent-skills",
+			"sourceType": "github",
+			"skillPath": "skills/project-documentation/SKILL.md",
+			"computedHash": "6045f59b9b299ff3e7223f5dea726d78817e9937573a48324fd0d50ab86b6d03"
+		}
+	}
+}
