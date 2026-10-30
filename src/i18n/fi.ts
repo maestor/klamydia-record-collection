@@ -35,10 +35,12 @@ export const messages = {
 	galleryNext: "Seuraava kuva",
 	galleryStatus: "Kuva {current} / {total}",
 	galleryThumbnail: "Näytä kuva {current} / {total}",
+	galleryPagination: "Valitse kuva",
+	galleryThumbnails: "Pikkukuvat",
+	galleryToggleThumbnails: "Näytä pikkukuvat",
 	galleryDialog: "Suurempi kuva",
 	galleryEnlarge: "Suurenna kuva",
 	galleryClose: "Sulje",
-	galleryOriginal: "Avaa alkuperäinen kuva",
 	galleryAlt: (title: string, index: number, count: number) =>
 		`Julkaisun ${title} kuva ${index} / ${count}`,
 	backArchive: "Takaisin arkistoon",

@@ -29,9 +29,9 @@ const Layout: FC<
 			<meta name="description" content={description || m.defaultDescription} />
 			<title>{title} | Klamydiakokoelma</title>
 			{canonical && <link rel="canonical" href={canonical} />}
-			<link rel="stylesheet" href="/assets/style-0319f524.css" />
+			<link rel="stylesheet" href="/assets/style-b5bccb7b.css" />
 			<script src="/assets/images-cc5a7637.js" defer></script>
-			{gallery && <script src="/assets/gallery-e3a23810.js" defer></script>}
+			{gallery && <script src="/assets/gallery-d693c11e.js" defer></script>}
 			{archive && (
 				<>
 					<script src="/assets/htmx-d6fdc75f.js" defer></script>
@@ -445,10 +445,12 @@ export function createApp(
 						data-next={m.galleryNext}
 						data-status={m.galleryStatus}
 						data-thumbnail={m.galleryThumbnail}
+						data-pagination={m.galleryPagination}
+						data-thumbnails={m.galleryThumbnails}
+						data-toggle-thumbnails={m.galleryToggleThumbnails}
 						data-dialog={m.galleryDialog}
 						data-enlarge={m.galleryEnlarge}
 						data-close={m.galleryClose}
-						data-original={m.galleryOriginal}
 						data-unavailable={m.coverMissing}
 					>
 						<ol class="gallery-slides">

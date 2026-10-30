@@ -19,37 +19,93 @@
 		element.textContent = label;
 		return element;
 	};
+	const iconButton = (label: string, path: string) => {
+		const element = button("");
+		element.className = "gallery-icon";
+		element.setAttribute("aria-label", label);
+		element.title = label;
+		const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+		svg.setAttribute("viewBox", "0 0 24 24");
+		svg.setAttribute("aria-hidden", "true");
+		const drawing = document.createElementNS(
+			"http://www.w3.org/2000/svg",
+			"path",
+		);
+		drawing.setAttribute("d", path);
+		svg.append(drawing);
+		element.append(svg);
+		return element;
+	};
+	const stage = document.createElement("div");
+	stage.className = "gallery-stage";
+	const slideList = slides[0].parentElement as HTMLOListElement;
+	slideList.before(stage);
+	stage.append(slideList);
 	let current = 0;
 	let suppressClick = false;
 	let pointerStart: { x: number; y: number; id: number } | null = null;
 	const thumbnails: HTMLButtonElement[] = [];
+	const dots: HTMLButtonElement[] = [];
+	const count = document.createElement("span");
+	count.className = "gallery-count";
+	count.setAttribute("aria-hidden", "true");
 	const status = document.createElement("p");
-	status.className = "gallery-status";
+	status.className = "gallery-status visually-hidden";
 	status.setAttribute("role", "status");
 	status.setAttribute("aria-live", "polite");
 	status.setAttribute("aria-atomic", "true");
 	const update = (index: number) => {
+		const moveFocus = slides[current].contains(document.activeElement);
 		current = (index + slides.length) % slides.length;
 		slides.forEach((slide, position) => {
 			slide.hidden = position !== current;
 		});
-		thumbnails.forEach((thumb, position) => {
-			thumb.setAttribute("aria-pressed", String(position === current));
-		});
+		for (const controls of [thumbnails, dots])
+			controls.forEach((control, position) => {
+				control.setAttribute("aria-pressed", String(position === current));
+			});
+		count.textContent = `${current + 1} / ${slides.length}`;
 		status.textContent = format(data.status ?? "", current + 1);
+		if (moveFocus) links[current]?.focus({ preventScroll: true });
 	};
 	if (slides.length > 1) {
-		const controls = document.createElement("div");
-		controls.className = "gallery-controls";
-		const previous = button(data.previous ?? "");
-		const next = button(data.next ?? "");
+		const previous = iconButton(data.previous ?? "", "m14 6-6 6 6 6");
+		previous.classList.add("gallery-previous");
+		const next = iconButton(data.next ?? "", "m10 6 6 6-6 6");
+		next.classList.add("gallery-next");
 		previous.addEventListener("click", () => update(current - 1));
 		next.addEventListener("click", () => update(current + 1));
-		controls.append(previous, status, next);
+		stage.append(count, previous, next);
+		const pagination = document.createElement("div");
+		pagination.className = "gallery-pagination";
+		pagination.setAttribute("role", "group");
+		pagination.setAttribute("aria-label", data.pagination ?? "");
 		const strip = document.createElement("div");
 		strip.className = "gallery-thumbnails";
+		strip.id = "gallery-thumbnails";
+		strip.hidden = true;
+		strip.setAttribute("role", "group");
+		strip.setAttribute("aria-label", data.thumbnails ?? "");
+		const toggle = iconButton(
+			data.toggleThumbnails ?? "",
+			"M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z",
+		);
+		toggle.classList.add("gallery-toggle");
+		toggle.setAttribute("aria-controls", strip.id);
+		toggle.setAttribute("aria-expanded", "false");
+		toggle.addEventListener("click", () => {
+			strip.hidden = !strip.hidden;
+			toggle.setAttribute("aria-expanded", String(!strip.hidden));
+		});
+		stage.append(toggle);
 		links.forEach((link, index) => {
 			if (!link) return;
+			const dot = button("");
+			dot.className = "gallery-dot";
+			dot.setAttribute("aria-label", format(data.thumbnail ?? "", index + 1));
+			dot.addEventListener("click", () => update(index));
+			dots.push(dot);
+			pagination.append(dot);
 			const thumb = button("");
 			thumb.className = "gallery-thumbnail";
 			thumb.setAttribute("aria-label", format(data.thumbnail ?? "", index + 1));
@@ -73,7 +129,7 @@
 			thumbnails.push(thumb);
 			strip.append(thumb);
 		});
-		gallery.append(controls, strip);
+		gallery.append(status, pagination, strip);
 		gallery.addEventListener("keydown", (event) => {
 			if (event.target instanceof Element && event.target.closest("dialog"))
 				return;
@@ -133,17 +189,14 @@
 		const dialog = document.createElement("dialog");
 		dialog.className = "image-viewer";
 		dialog.setAttribute("aria-label", data.dialog ?? "");
-		const close = button(data.close ?? "");
-		close.className = "viewer-close";
+		const close = iconButton(data.close ?? "", "m6 6 12 12 M18 6 6 18");
+		close.classList.add("viewer-close");
 		const image = document.createElement("img");
 		image.alt = "";
 		const error = document.createElement("p");
 		error.textContent = data.unavailable ?? "";
 		error.hidden = true;
 		error.setAttribute("role", "status");
-		const fullLink = document.createElement("a");
-		fullLink.textContent = data.original ?? "";
-		fullLink.className = "viewer-original";
 		let opener: HTMLElement | null = null;
 		image.addEventListener("error", () => {
 			image.hidden = true;
@@ -152,26 +205,20 @@
 		close.addEventListener("click", () => dialog.close());
 		dialog.addEventListener("keydown", (event) => {
 			if (event.key !== "Tab") return;
-			if (event.shiftKey && document.activeElement === close) {
-				event.preventDefault();
-				fullLink.focus();
-			} else if (!event.shiftKey && document.activeElement === fullLink) {
-				event.preventDefault();
-				close.focus();
-			}
+			event.preventDefault();
+			close.focus();
 		});
 		dialog.addEventListener("close", () => {
 			image.removeAttribute("src");
 			opener?.focus();
 		});
-		dialog.append(close, image, error, fullLink);
+		dialog.append(close, image, error);
 		gallery.append(dialog);
 		const openViewer = (link: HTMLAnchorElement, trigger: HTMLElement) => {
 			opener = trigger;
 			image.hidden = false;
 			error.hidden = true;
 			image.alt = link.dataset.alt ?? "";
-			fullLink.setAttribute("href", link.getAttribute("href") ?? link.href);
 			try {
 				dialog.showModal();
 				image.src = link.href;
@@ -195,16 +242,16 @@
 				if (openViewer(link, link)) event.preventDefault();
 			});
 		});
-		const enlarge = button(data.enlarge ?? "");
-		enlarge.className = "gallery-enlarge";
+		const enlarge = iconButton(
+			data.enlarge ?? "",
+			"M8 3H3v5 M16 3h5v5 M21 16v5h-5 M8 21H3v-5",
+		);
+		enlarge.classList.add("gallery-enlarge");
 		enlarge.addEventListener("click", () => {
 			const link = links[current];
 			if (link && !openViewer(link, enlarge)) window.location.assign(link.href);
 		});
-		gallery.insertBefore(
-			enlarge,
-			gallery.querySelector(".gallery-controls") ?? dialog,
-		);
+		stage.append(enlarge);
 	}
 	update(0);
 	gallery.dataset.ready = "true";
