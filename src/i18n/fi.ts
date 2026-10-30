@@ -6,6 +6,12 @@ export const locale = {
 export const messages = {
 	home: "Etusivu",
 	archive: "Arkisto",
+	about: "Tietoa",
+	aboutTitle: "Tietoa kokoelmasta",
+	aboutUnavailable: "Tietoja kokoelmasta ei ole tällä hetkellä saatavilla.",
+	aboutWritten: "Kirjoitettu 2.1.2023",
+	aboutImageAlt: "Klamydia-kaseteista tehty kello",
+	followInstagram: "Seuraa instagramissa",
 	navigation: "Päävalikko",
 	archivePages: "Arkiston sivut",
 	tags: "Tunnisteet",

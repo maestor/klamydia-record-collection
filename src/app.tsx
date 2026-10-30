@@ -4,6 +4,8 @@ import type { FC, PropsWithChildren } from "hono/jsx";
 import { formatDate, locale, messages as m } from "./i18n/fi.js";
 import { presentDescription } from "./presentation/description.js";
 import {
+	ABOUT_MEDIA_ID,
+	getAboutPost,
 	getImages,
 	getPost,
 	getTags,
@@ -26,7 +28,7 @@ const Layout: FC<
 			<meta name="description" content={description || m.defaultDescription} />
 			<title>{title} | Klamydiakokoelma</title>
 			{canonical && <link rel="canonical" href={canonical} />}
-			<link rel="stylesheet" href="/assets/style-28dffa79.css" />
+			<link rel="stylesheet" href="/assets/style-0a80e625.css" />
 			<script src="/assets/images-cc5a7637.js" defer></script>
 			{archive && (
 				<>
@@ -40,11 +42,27 @@ const Layout: FC<
 				<a href="/">Klamydiakokoelma</a>
 				<nav aria-label={m.navigation}>
 					<a href="/archive">{m.archive}</a>
+					<a href="/about">{m.about}</a>
 				</nav>
 			</header>
 			<main>{children}</main>
 		</body>
 	</html>
+);
+const InstagramIcon: FC = () => (
+	<svg
+		aria-hidden="true"
+		viewBox="0 0 24 24"
+		fill="none"
+		stroke="currentColor"
+		stroke-width="2"
+		stroke-linecap="round"
+		stroke-linejoin="round"
+	>
+		<rect x="3" y="3" width="18" height="18" rx="5" />
+		<circle cx="12" cy="12" r="4" />
+		<circle cx="17.5" cy="6.5" r=".7" fill="currentColor" stroke="none" />
+	</svg>
 );
 const validMedia = (url: unknown): url is string =>
 	typeof url === "string" && /^\/media\/[a-f0-9]{64}\.jpg$/.test(url);
@@ -201,6 +219,69 @@ export function createApp(
 			</Layout>,
 		);
 	});
+
+	app.get("/about", async (c) => {
+		const post = await getAboutPost(db);
+		const images = post ? await getImages(db, String(post.slug)) : [];
+		const image = images[0];
+		const imageUrl = image && validMedia(image.url) ? image.url : null;
+		const preview =
+			imageUrl && image && validMedia(image.preview_url)
+				? image.preview_url
+				: imageUrl;
+		const reading = post
+			? presentDescription(String(post.title), String(post.description)).text
+			: "";
+		return c.html(
+			<Layout
+				title={m.aboutTitle}
+				canonical={`${siteUrl}/about`}
+				description={reading.slice(0, 160)}
+			>
+				<article class="about-page">
+					<p class="eyebrow">Klamydiakokoelma</p>
+					<h1 class="page-title">{m.aboutTitle}</h1>
+					{post ? (
+						<>
+							<p class="about-date">
+								<time dateTime="2023-01-02">{m.aboutWritten}</time>
+							</p>
+							<div class="about-content">
+								<div class="about-image">
+									{preview ? (
+										<img
+											data-image-fallback
+											data-fallback-label={m.coverMissing}
+											src={preview}
+											alt={m.aboutImageAlt}
+											width={Number(image?.width) || undefined}
+											height={Number(image?.height) || undefined}
+										/>
+									) : (
+										<p class="image-failure">{m.coverMissing}</p>
+									)}
+								</div>
+								<div>
+									<p class="description">{reading}</p>
+									<p>
+										<a
+											class="source-link"
+											href="https://www.instagram.com/klamydiakokoelma/"
+										>
+											<InstagramIcon />
+											{m.followInstagram}
+										</a>
+									</p>
+								</div>
+							</div>
+						</>
+					) : (
+						<p class="empty-state">{m.aboutUnavailable}</p>
+					)}
+				</article>
+			</Layout>,
+		);
+	});
 	app.get("/archive/fragments", async (c) => {
 		const rawPage = c.req.query("page");
 		const rawStart = c.req.query("start");
@@ -298,12 +379,14 @@ export function createApp(
 		);
 	});
 	app.get("/sitemap.xml", async (c) => {
-		const posts = await db.execute(
-			"SELECT slug FROM posts ORDER BY published_at DESC, slug DESC",
-		);
+		const posts = await db.execute({
+			sql: "SELECT p.slug FROM posts p WHERE NOT EXISTS (SELECT 1 FROM instagram_posts ip WHERE ip.post_slug = p.slug AND ip.media_id = ?) ORDER BY p.published_at DESC, p.slug DESC",
+			args: [ABOUT_MEDIA_ID],
+		});
 		const urls = [
 			`${siteUrl}/`,
 			`${siteUrl}/archive`,
+			`${siteUrl}/about`,
 			...posts.rows.map(
 				(post) => `${siteUrl}/posts/${encodeURIComponent(String(post.slug))}`,
 			),
@@ -315,6 +398,9 @@ export function createApp(
 		);
 	});
 	app.get("/posts/:slug", async (c) => {
+		const about = await getAboutPost(db);
+		if (about && String(about.slug) === c.req.param("slug"))
+			return c.redirect("/about", 302);
 		const post = await getPost(db, c.req.param("slug"));
 		if (!post)
 			return c.html(
@@ -398,25 +484,7 @@ export function createApp(
 					) && (
 						<p>
 							<a class="source-link" href={permalink}>
-								<svg
-									aria-hidden="true"
-									viewBox="0 0 24 24"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="2"
-									stroke-linecap="round"
-									stroke-linejoin="round"
-								>
-									<rect x="3" y="3" width="18" height="18" rx="5" />
-									<circle cx="12" cy="12" r="4" />
-									<circle
-										cx="17.5"
-										cy="6.5"
-										r=".7"
-										fill="currentColor"
-										stroke="none"
-									/>
-								</svg>
+								<InstagramIcon />
 								{m.source}
 							</a>
 						</p>
