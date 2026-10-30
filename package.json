@@ -8,7 +8,7 @@
 	},
 	"packageManager": "npm@11.19.1",
 	"scripts": {
-		"dev": "node --watch --import tsx src/server.ts",
+		"dev": "node --env-file-if-exists=.env --watch --import tsx src/server.ts",
 		"db:migrate": "node --import tsx scripts/migrate.ts",
 		"seed:demo": "node --import tsx scripts/seed.ts",
 		"typecheck": "tsc --noEmit",
