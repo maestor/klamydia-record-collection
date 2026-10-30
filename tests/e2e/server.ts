@@ -56,6 +56,27 @@ for (const post of fixtures) {
 		}
 	}
 }
+// Exercise a full album without adding another post to the archive fixtures.
+for (let position = 2; position <= 20; position++) {
+	const filename = `${createHash("sha256")
+		.update(position % 2 ? "many-portrait" : "many-landscape")
+		.digest("hex")}.jpg`;
+	images.set(
+		filename,
+		position % 2
+			? "tests/fixtures/media/example.svg"
+			: "tests/fixtures/media/example-2.svg",
+	);
+	await db.execute({
+		sql: "INSERT INTO images VALUES (?, ?, ?, ?)",
+		args: [
+			"esimerkki-26",
+			position,
+			`/media/${filename}`,
+			`Albumin kuva ${position}`,
+		],
+	});
+}
 await db.execute({
 	sql: "INSERT INTO posts VALUES (?, ?, ?, ?)",
 	args: [
