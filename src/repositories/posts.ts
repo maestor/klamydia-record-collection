@@ -12,6 +12,24 @@ export type PostSummary = {
 	cover_height: number | null;
 };
 
+export type Post = {
+	slug: string;
+	title: string;
+	published_at: string;
+	description: string;
+	permalink: string | null;
+};
+
+export type AboutPost = Pick<Post, "slug" | "title" | "description">;
+
+export type PostImage = {
+	url: string;
+	alt: string;
+	preview_url: string | null;
+	width: number | null;
+	height: number | null;
+};
+
 export async function listPosts(db: Client, limit: number, offset = 0) {
 	return (
 		await db.execute({
@@ -37,21 +55,42 @@ export async function listPosts(db: Client, limit: number, offset = 0) {
 		}),
 	);
 }
-export async function getPost(db: Client, slug: string) {
-	return (
+export async function getPost(
+	db: Client,
+	slug: string,
+): Promise<Post | undefined> {
+	const row = (
 		await db.execute({
 			sql: "SELECT p.slug, p.title, p.published_at, p.description, ip.permalink FROM posts p LEFT JOIN instagram_posts ip ON ip.post_slug = p.slug WHERE p.slug = ?",
 			args: [slug],
 		})
 	).rows[0];
+	return row
+		? {
+				slug: String(row.slug),
+				title: String(row.title),
+				published_at: String(row.published_at),
+				description: String(row.description),
+				permalink: row.permalink === null ? null : String(row.permalink),
+			}
+		: undefined;
 }
-export async function getImages(db: Client, slug: string) {
+export async function getImages(
+	db: Client,
+	slug: string,
+): Promise<PostImage[]> {
 	return (
 		await db.execute({
-			sql: "SELECT i.url, i.alt, ii.preview_url, ii.width, ii.height, ii.media_id FROM images i LEFT JOIN instagram_images ii ON ii.post_slug = i.post_slug AND ii.position = i.position WHERE i.post_slug = ? ORDER BY i.position",
+			sql: "SELECT i.url, i.alt, ii.preview_url, ii.width, ii.height FROM images i LEFT JOIN instagram_images ii ON ii.post_slug = i.post_slug AND ii.position = i.position WHERE i.post_slug = ? ORDER BY i.position",
 			args: [slug],
 		})
-	).rows;
+	).rows.map((row) => ({
+		url: String(row.url),
+		alt: String(row.alt),
+		preview_url: row.preview_url === null ? null : String(row.preview_url),
+		width: row.width === null ? null : Number(row.width),
+		height: row.height === null ? null : Number(row.height),
+	}));
 }
 export async function getTags(db: Client, slug: string) {
 	return (
@@ -59,14 +98,29 @@ export async function getTags(db: Client, slug: string) {
 			sql: "SELECT t.display FROM tags t JOIN post_tags pt ON pt.tag_normalized = t.normalized WHERE pt.post_slug = ? ORDER BY t.normalized",
 			args: [slug],
 		})
-	).rows;
+	).rows.map((row) => String(row.display));
 }
 
-export async function getAboutPost(db: Client) {
-	return (
+export async function getAboutPost(db: Client): Promise<AboutPost | undefined> {
+	const row = (
 		await db.execute({
 			sql: "SELECT p.slug, p.title, p.description FROM posts p JOIN instagram_posts ip ON ip.post_slug = p.slug WHERE ip.media_id = ?",
 			args: [ABOUT_MEDIA_ID],
 		})
 	).rows[0];
+	return row
+		? {
+				slug: String(row.slug),
+				title: String(row.title),
+				description: String(row.description),
+			}
+		: undefined;
+}
+
+export async function listPostSlugs(db: Client): Promise<string[]> {
+	const posts = await db.execute({
+		sql: "SELECT p.slug FROM posts p WHERE NOT EXISTS (SELECT 1 FROM instagram_posts ip WHERE ip.post_slug = p.slug AND ip.media_id = ?) ORDER BY p.published_at DESC, p.slug DESC",
+		args: [ABOUT_MEDIA_ID],
+	});
+	return posts.rows.map((row) => String(row.slug));
 }

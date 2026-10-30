@@ -99,6 +99,20 @@ it("presents the introduction as About and excludes it from browsing", async () 
 		const sitemap = await (await app.request("/sitemap.xml")).text();
 		expect(sitemap).toContain("https://example.test/about");
 		expect(sitemap).not.toContain(`/posts/${slug}`);
+		const preview = `/media/${"b".repeat(64)}.jpg`;
+		await db.execute({
+			sql: "INSERT INTO instagram_images VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+			args: [slug, 1, "about-image", 1200, 800, "jpeg", "hash", preview],
+		});
+		document.documentElement.innerHTML = await (
+			await app.request("/about")
+		).text();
+		const illustration = within(document.body).getByRole("img", {
+			name: "Klamydia-kaseteista tehty kello",
+		});
+		expect(illustration.getAttribute("src")).toBe(preview);
+		expect(illustration.getAttribute("width")).toBe("1200");
+		expect(illustration.getAttribute("height")).toBe("800");
 	} finally {
 		db.close();
 	}
