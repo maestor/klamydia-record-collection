@@ -159,3 +159,64 @@ it("shows the first preview as a linked card and offers the complete archive", a
 		db.close();
 	}
 });
+
+it("reconstructs a bounded archive range and serves separate append fragments", async () => {
+	const db = createClient({ url: "file::memory:" });
+	try {
+		await migrate(db);
+		for (let i = 1; i <= 27; i++)
+			await db.execute({
+				sql: "INSERT INTO posts VALUES (?, ?, ?, ?)",
+				args: [
+					`demo-${i}`,
+					`Levy ${i}`,
+					`2026-01-${String(i).padStart(2, "0")}`,
+					"Kuvaus",
+				],
+			});
+		const app = createApp(db);
+		const full = await app.request("/archive?page=1&through=2");
+		expect(full.status).toBe(200);
+		document.documentElement.innerHTML = await full.text();
+		expect(document.querySelectorAll(".post-card")).toHaveLength(24);
+		expect(
+			within(document.body)
+				.getByRole("link", { name: "Levy 27" })
+				.getAttribute("href"),
+		).toBe("/posts/demo-27?page=1&through=2");
+		expect(
+			within(document.body)
+				.getByRole("link", { name: "Näytä lisää" })
+				.getAttribute("href"),
+		).toBe("/archive?page=3");
+		const post = await app.request("/posts/demo-27?page=1&through=2");
+		document.documentElement.innerHTML = await post.text();
+		expect(
+			within(document.body)
+				.getByRole("link", { name: "Takaisin arkistoon" })
+				.getAttribute("href"),
+		).toBe("/archive?page=1&through=2");
+		const fragment = await app.request("/archive/fragments?page=2&start=1");
+		const html = await fragment.text();
+		expect(fragment.status).toBe(200);
+		expect(html).not.toContain("<html");
+		expect(fragment.headers.get("x-archive-count")).toBe("12");
+		expect(fragment.headers.get("x-archive-has-more")).toBe("true");
+		const box = document.createElement("ul");
+		box.innerHTML = html;
+		expect(box.querySelectorAll(".post-card")).toHaveLength(12);
+		for (const path of [
+			"/archive?page=2&through=1",
+			"/archive?page=1&through=21",
+			"/archive?through=2",
+			"/archive/fragments?page=21&start=1",
+			"/archive/fragments?page=2",
+		]) {
+			const response = await app.request(path);
+			expect(response.status).toBe(400);
+			expect(response.headers.get("cache-control")).toBe("no-store");
+		}
+	} finally {
+		db.close();
+	}
+});

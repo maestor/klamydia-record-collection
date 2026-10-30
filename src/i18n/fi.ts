@@ -29,6 +29,19 @@ export const messages = {
 	source: "Alkuperäinen julkaisu",
 	defaultDescription: "Klamydiakokoelman julkaisuja.",
 	older: "Vanhemmat",
+	loadMore: "Näytä lisää",
+	nextPage: "Seuraavat julkaisut",
+	archiveEnd: "Kaikki julkaisut näytetty.",
+	archiveLoading: "Ladataan julkaisuja…",
+	archiveError:
+		"Julkaisujen lataaminen epäonnistui. Yritä uudelleen tai avaa seuraava sivu.",
+	archiveRetry: "Yritä uudelleen",
+	archiveFallback: "Avaa seuraava sivu",
+	archiveAddedTemplate: "Lisätty {count} julkaisua.",
+	archiveProgressTemplate: "Sivut {start}–{end}, {count} julkaisua",
+	archivePageTemplate: "Sivu {page}",
+	archiveProgress: (start: number, end: number, count: number) =>
+		`Sivut ${start}–${end}, ${count} julkaisua`,
 	newer: "Uudemmat",
 	page: (number: number) => `Sivu ${number}`,
 } as const;
