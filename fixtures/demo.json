@@ -1,0 +1,9 @@
+{
+	"slug": "esimerkki",
+	"title": "Esimerkkijulkaisu",
+	"published_at": "2026-01-01",
+	"description": "Tämä on kuvitteellinen esimerkki kokoelman julkaisusivusta.\n\nKuvaus säilyy kokonaisena, myös ääkköset ja rivinvaihdot.",
+	"images": [
+		{ "url": "/media/example-248e687c.svg", "alt": "Kuvitteellinen levykansi" }
+	]
+}

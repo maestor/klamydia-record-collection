@@ -1,0 +1,47 @@
+:root {
+	color-scheme: light;
+	font-family: system-ui, sans-serif;
+	color: #172821;
+	background: #f8f5eb;
+	line-height: 1.6;
+}
+body {
+	margin: 0;
+}
+header,
+main {
+	max-width: 70rem;
+	margin: auto;
+	padding: 1.5rem;
+}
+header {
+	border-bottom: 1px solid #9aab9f;
+	font-weight: 700;
+}
+header p {
+	font-size: 0.875rem;
+	font-weight: 400;
+}
+h1 {
+	line-height: 1.15;
+	font-size: clamp(2rem, 5vw, 3.5rem);
+}
+.description {
+	white-space: pre-wrap;
+	max-width: 65ch;
+	overflow-wrap: anywhere;
+}
+.gallery {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
+	gap: 1rem;
+}
+img {
+	display: block;
+	width: 100%;
+	height: auto;
+}
+a:focus-visible {
+	outline: 3px solid #9b321e;
+	outline-offset: 4px;
+}
