@@ -2,6 +2,8 @@ import { access } from "node:fs/promises";
 import { createClient } from "@libsql/client";
 import { environment } from "../src/env.js";
 import { importInstagram } from "../src/instagram-import.js";
+import { r2Address, r2Client } from "../src/r2-reader.js";
+import { putImmutable, verifyObject } from "./r2-store.js";
 
 try {
 	const args = process.argv.slice(2);
@@ -26,6 +28,35 @@ try {
 			"Set DATABASE_URL to an existing local SQLite database; see docs/instagram-access.md.",
 		);
 	const { databaseUrl } = environment(process.env);
+	const mode = process.env.R2_MEDIA_MODE ?? "local";
+	if (!["local", "r2"].includes(mode))
+		throw new Error("R2_MEDIA_MODE must be local or r2.");
+	let putImage:
+		| ((filename: string, bytes: Buffer) => Promise<void>)
+		| undefined;
+	if (mode === "r2" && !dryRun) {
+		const address = r2Address(process.env);
+		const writer = r2Client(
+			address,
+			process.env.R2_ACCESS_KEY_ID,
+			process.env.R2_SECRET_ACCESS_KEY,
+		);
+		const reader = r2Client(
+			address,
+			process.env.R2_READ_ACCESS_KEY_ID,
+			process.env.R2_READ_SECRET_ACCESS_KEY,
+		);
+		putImage = async (filename, bytes) => {
+			try {
+				await putImmutable(writer, address, filename, bytes);
+				await verifyObject(reader, address, filename, bytes);
+			} catch {
+				throw new Error(
+					`R2 upload or read verification failed for ${filename}.`,
+				);
+			}
+		};
+	}
 	await access(databaseUrl.slice(5));
 	const db = createClient({ url: databaseUrl });
 	try {
@@ -50,6 +81,7 @@ try {
 				token: process.env.INSTAGRAM_ACCESS_TOKEN ?? "",
 				limit,
 				mediaId,
+				putImage,
 				dryRun,
 			});
 			if (runId !== undefined)

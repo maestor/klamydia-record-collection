@@ -10,4 +10,4 @@ npm run db:migrate
 npm run dev
 ```
 
-Open http://localhost:3000/. The default database is `.data/collection.db`; the site can run without credentials once it has been migrated. `npm run dev` loads an optional `.env` file (see [.env.example](.env.example)); existing environment variables take precedence. See [Instagram access and importing](docs/instagram-access.md) to populate the collection and [development and security](docs/development.md) for tests and the separate demo workflow.
+Open http://localhost:3000/. The default database is `.data/collection.db`; the site can run without credentials once it has been migrated. `npm run dev` loads an optional `.env` file (see [.env.example](.env.example)); existing environment variables take precedence. See [Instagram access and importing](docs/instagram-access.md) to populate the collection, [private R2 media](docs/r2-media.md) for remote images, and [development and security](docs/development.md) for tests and the separate demo workflow.

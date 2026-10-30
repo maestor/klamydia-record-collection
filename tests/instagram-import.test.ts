@@ -300,3 +300,67 @@ it("keeps existing posts when an upstream response is incomplete or unsupported"
 		await rm(dir, { recursive: true, force: true });
 	}
 });
+
+it("imports media into a configured remote store without creating local image files", async () => {
+	const dir = await mkdtemp(join(tmpdir(), "instagram-import-"));
+	const db = createClient({ url: "file::memory:" });
+	try {
+		await migrate(db);
+		const jpeg = await sharp({
+			create: { width: 4, height: 4, channels: 3, background: "red" },
+		})
+			.jpeg()
+			.toBuffer();
+		const objects = new Map<string, Buffer>();
+		const fetcher: typeof fetch = async (input) =>
+			new URL(String(input)).hostname === "graph.facebook.com"
+				? Response.json({
+						data: [
+							{
+								id: "1",
+								timestamp: "2024-01-01T00:00:00+0000",
+								media_type: "IMAGE",
+								permalink: "https://www.instagram.com/p/test/",
+								media_url: "https://images.fbcdn.net/file",
+							},
+						],
+					})
+				: new Response(jpeg);
+		await importInstagram({
+			db,
+			mediaDir: dir,
+			accountId: "123",
+			token: "token",
+			fetcher,
+			putImage: async (name, bytes) => {
+				objects.set(name, bytes);
+			},
+		});
+		expect(objects.size).toBe(2);
+		expect(await (await import("node:fs/promises")).readdir(dir)).toEqual([]);
+		expect(
+			(await db.execute("SELECT count(*) AS n FROM posts")).rows[0].n,
+		).toBe(1);
+		await db.execute(
+			"UPDATE posts SET description = 'Previous published content'",
+		);
+		await expect(
+			importInstagram({
+				db,
+				mediaDir: dir,
+				accountId: "123",
+				token: "token",
+				fetcher,
+				putImage: async () => {
+					throw new Error("storage unavailable");
+				},
+			}),
+		).rejects.toThrow("storage unavailable");
+		expect(
+			(await db.execute("SELECT description FROM posts")).rows[0].description,
+		).toBe("Previous published content");
+	} finally {
+		db.close();
+		await rm(dir, { recursive: true, force: true });
+	}
+});
