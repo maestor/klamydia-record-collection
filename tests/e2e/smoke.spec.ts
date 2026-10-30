@@ -50,9 +50,9 @@ test("browses pages with keyboard and browser history without scripts", async ({
 		await expect(page).toHaveURL(/posts\/esimerkki-27$/);
 		await page.reload();
 		await page.getByRole("link", { name: "Takaisin arkistoon" }).click();
-		await page.getByRole("link", { name: "Vanhemmat" }).click();
+		await page.getByRole("link", { name: "Näytä lisää" }).click();
 		await expect(page).toHaveURL(/page=2/);
-		await page.getByRole("link", { name: "Vanhemmat" }).click();
+		await page.getByRole("link", { name: "Näytä lisää" }).click();
 		await expect(page.getByText("Sivu 3")).toBeVisible();
 		await page.getByRole("link", { name: "Esimerkkijulkaisu 03" }).click();
 		await page.getByRole("link", { name: "Takaisin arkistoon" }).click();

@@ -16,8 +16,9 @@ const Layout: FC<
 		title: string;
 		canonical?: string;
 		description?: string;
+		archive?: boolean;
 	}>
-> = ({ title, canonical, description, children }) => (
+> = ({ title, canonical, description, archive, children }) => (
 	<html lang={locale.language}>
 		<head>
 			<meta charSet="utf-8" />
@@ -25,8 +26,14 @@ const Layout: FC<
 			<meta name="description" content={description || m.defaultDescription} />
 			<title>{title} | Klamydiakokoelma</title>
 			{canonical && <link rel="canonical" href={canonical} />}
-			<link rel="stylesheet" href="/assets/style-84cf826c.css" />
+			<link rel="stylesheet" href="/assets/style-28dffa79.css" />
 			<script src="/assets/images-cc5a7637.js" defer></script>
+			{archive && (
+				<>
+					<script src="/assets/htmx-d6fdc75f.js" defer></script>
+					<script src="/assets/archive-7e74fb84.js" defer></script>
+				</>
+			)}
 		</head>
 		<body>
 			<header>
@@ -42,67 +49,97 @@ const Layout: FC<
 const validMedia = (url: unknown): url is string =>
 	typeof url === "string" && /^\/media\/[a-f0-9]{64}\.jpg$/.test(url);
 
-const PostList: FC<{ posts: PostSummary[]; page?: number }> = ({
-	posts,
-	page,
-}) =>
-	posts.length ? (
-		<ul class="post-list">
-			{posts.map((post, index) => {
-				const scale =
-					post.cover_width && post.cover_height
-						? Math.min(1, 640 / Math.max(post.cover_width, post.cover_height))
-						: null;
-				return (
-					<li>
-						<article class="post-card">
-							<a
-								class="post-card-link"
-								href={`/posts/${encodeURIComponent(post.slug)}${page && page > 1 ? `?page=${page}` : ""}`}
-							>
-								<div class="artwork">
-									<span class="artwork-placeholder" aria-hidden="true">
-										{m.coverMissing}
-									</span>
-									{validMedia(post.cover_url) && (
-										<img
-											data-image-fallback
-											src={post.cover_url}
-											alt=""
-											width={
-												scale && post.cover_width
-													? Math.round(post.cover_width * scale)
-													: undefined
-											}
-											height={
-												scale && post.cover_height
-													? Math.round(post.cover_height * scale)
-													: undefined
-											}
-											loading={index === 0 ? "eager" : "lazy"}
-										/>
-									)}
-								</div>
-								<div class="post-card-details">
-									<h2>{post.title}</h2>
-								</div>
-							</a>
-							<div class="post-card-meta">
-								<time dateTime={post.published_at}>
-									{formatDate(post.published_at)}
-								</time>
-								{post.image_count > 1 && (
-									<span>{m.imageCount(post.image_count)}</span>
+function archiveContext(page?: number, through?: number) {
+	if (!page || (page === 1 && (!through || through === 1))) return "";
+	return `?page=${page}${through && through > page ? `&through=${through}` : ""}`;
+}
+const PostItems: FC<{
+	posts: PostSummary[];
+	page?: number;
+	through?: number;
+}> = ({ posts, page, through }) => (
+	<>
+		{posts.map((post, index) => {
+			const scale =
+				post.cover_width && post.cover_height
+					? Math.min(1, 640 / Math.max(post.cover_width, post.cover_height))
+					: null;
+			return (
+				<li>
+					<article class="post-card">
+						<a
+							class="post-card-link"
+							href={`/posts/${encodeURIComponent(post.slug)}${archiveContext(page, through)}`}
+						>
+							<div class="artwork">
+								<span class="artwork-placeholder" aria-hidden="true">
+									{m.coverMissing}
+								</span>
+								{validMedia(post.cover_url) && (
+									<img
+										data-image-fallback
+										src={post.cover_url}
+										alt=""
+										width={
+											scale && post.cover_width
+												? Math.round(post.cover_width * scale)
+												: undefined
+										}
+										height={
+											scale && post.cover_height
+												? Math.round(post.cover_height * scale)
+												: undefined
+										}
+										loading={index === 0 ? "eager" : "lazy"}
+									/>
 								)}
 							</div>
-						</article>
-					</li>
-				);
-			})}
+							<div class="post-card-details">
+								<h2>{post.title}</h2>
+							</div>
+						</a>
+						<div class="post-card-meta">
+							<time dateTime={post.published_at}>
+								{formatDate(post.published_at)}
+							</time>
+							{post.image_count > 1 && (
+								<span>{m.imageCount(post.image_count)}</span>
+							)}
+						</div>
+					</article>
+				</li>
+			);
+		})}
+	</>
+);
+const PostList: FC<{
+	posts: PostSummary[];
+	page?: number;
+	through?: number;
+	archive?: boolean;
+}> = ({ posts, page, through, archive }) =>
+	posts.length ? (
+		<ul class="post-list" id={archive ? "archive-list" : undefined}>
+			<PostItems posts={posts} page={page} through={through} />
 		</ul>
 	) : (
 		<p class="empty-state">{m.empty}</p>
 	);
+const ARCHIVE_BATCH_LIMIT = 20;
+const validPage = (raw: string | undefined) =>
+	raw !== undefined && /^[1-9]\d{0,5}$/.test(raw);
+function range(page: string | undefined, through: string | undefined) {
+	if (
+		(page !== undefined && !validPage(page)) ||
+		(through !== undefined && (!validPage(through) || page === undefined))
+	)
+		return null;
+	const start = page ? Number(page) : 1;
+	const end = through ? Number(through) : start;
+	return end >= start && end - start < ARCHIVE_BATCH_LIMIT
+		? { start, end }
+		: null;
+}
 export function createApp(
 	db: Client,
 	siteUrl: string,
@@ -113,7 +150,7 @@ export function createApp(
 		await next();
 		c.header(
 			"Content-Security-Policy",
-			`default-src 'none'; img-src 'self' ${media.endpoint}; style-src 'self'; script-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'`,
+			`default-src 'none'; img-src 'self' ${media.endpoint}; style-src 'self'; script-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'`,
 		);
 		c.header("X-Content-Type-Options", "nosniff");
 		c.header("Referrer-Policy", "strict-origin-when-cross-origin");
@@ -164,9 +201,25 @@ export function createApp(
 			</Layout>,
 		);
 	});
+	app.get("/archive/fragments", async (c) => {
+		const rawPage = c.req.query("page");
+		const rawStart = c.req.query("start");
+		if (!validPage(rawPage) || !validPage(rawStart))
+			return c.text(m.invalidPage, 400);
+		const start = Number(rawStart),
+			page = Number(rawPage);
+		if (page <= start || page - start >= ARCHIVE_BATCH_LIMIT)
+			return c.text(m.invalidPage, 400);
+		const rows = await listPosts(db, 13, (page - 1) * 12);
+		c.header("X-Archive-Count", String(Math.min(rows.length, 12)));
+		c.header("X-Archive-Has-More", String(rows.length > 12));
+		return c.html(
+			<PostItems posts={rows.slice(0, 12)} page={start} through={page} />,
+		);
+	});
 	app.get("/archive", async (c) => {
-		const raw = c.req.query("page");
-		if (raw !== undefined && !/^[1-9]\d{0,5}$/.test(raw))
+		const selection = range(c.req.query("page"), c.req.query("through"));
+		if (!selection)
 			return c.html(
 				<Layout title={m.invalidTitle}>
 					<h1>{m.invalidPage}</h1>
@@ -174,27 +227,73 @@ export function createApp(
 				</Layout>,
 				400,
 			);
-		const page = raw ? Number(raw) : 1;
-		const posts = await listPosts(db, 13, (page - 1) * 12);
+		const { start, end } = selection;
+		const limit = (end - start + 1) * 12;
+		const posts = await listPosts(db, limit + 1, (start - 1) * 12);
+		const hasMore = posts.length > limit && end < 999999;
+		const canAppend = end - start < ARCHIVE_BATCH_LIMIT - 1;
 		return c.html(
 			<Layout
+				archive
 				title={m.archive}
-				canonical={`${siteUrl}/archive${page > 1 ? `?page=${page}` : ""}`}
+				canonical={`${siteUrl}/archive${archiveContext(start, end)}`}
 			>
 				<p class="eyebrow">{m.archiveLabel}</p>
 				<h1 class="page-title">{m.archive}</h1>
-				<PostList posts={posts.slice(0, 12)} page={page} />
-				<nav class="pagination" aria-label={m.archivePages}>
-					{page > 1 && (
-						<a href={page === 2 ? "/archive" : `/archive?page=${page - 1}`}>
-							{m.newer}
-						</a>
-					)}
-					<span>{m.page(page)}</span>
-					{posts.length > 12 && (
-						<a href={`/archive?page=${page + 1}`}>{m.older}</a>
-					)}
-				</nav>
+				<section
+					id="archive-results"
+					aria-label={m.archive}
+					aria-busy="false"
+					data-start={start}
+					data-end={end}
+					data-batch-limit={ARCHIVE_BATCH_LIMIT}
+					data-loading={m.archiveLoading}
+					data-error={m.archiveError}
+					data-retry={m.archiveRetry}
+					data-more={m.loadMore}
+					data-next={m.nextPage}
+					data-end-message={m.archiveEnd}
+					data-progress={m.archiveProgressTemplate}
+					data-added={m.archiveAddedTemplate}
+					data-page-label={m.archivePageTemplate}
+				>
+					<PostList
+						posts={posts.slice(0, limit)}
+						page={start}
+						through={end}
+						archive
+					/>
+					<p id="archive-status" role="status" aria-live="polite">
+						{posts.length
+							? `${m.archiveProgress(start, end, Math.min(posts.length, limit))}${hasMore ? "" : ` ${m.archiveEnd}`}`
+							: ""}
+					</p>
+					<nav class="pagination" aria-label={m.archivePages}>
+						{start > 1 && (
+							<a href={start === 2 ? "/archive" : `/archive?page=${start - 1}`}>
+								{m.newer}
+							</a>
+						)}
+						<span id="archive-page-label">{m.page(end)}</span>
+						{hasMore ? (
+							<a
+								id="archive-more"
+								class="button"
+								href={`/archive?page=${end + 1}`}
+								data-enhance={canAppend ? "true" : "false"}
+							>
+								{canAppend ? m.loadMore : m.nextPage}
+							</a>
+						) : (
+							posts.length > 0 && <span id="archive-end">{m.archiveEnd}</span>
+						)}
+						{hasMore && (
+							<a id="archive-fallback" href={`/archive?page=${end + 1}`} hidden>
+								{m.archiveFallback}
+							</a>
+						)}
+					</nav>
+				</section>
 			</Layout>,
 		);
 	});
@@ -325,12 +424,15 @@ export function createApp(
 
 					<p>
 						<a
-							href={
-								/^[1-9]\d{0,5}$/.test(c.req.query("page") ?? "") &&
-								c.req.query("page") !== "1"
-									? `/archive?page=${c.req.query("page")}`
-									: "/archive"
-							}
+							href={(() => {
+								const context = range(
+									c.req.query("page"),
+									c.req.query("through"),
+								);
+								return context
+									? `/archive${archiveContext(context.start, context.end)}`
+									: "/archive";
+							})()}
 						>
 							{m.backArchive}
 						</a>
