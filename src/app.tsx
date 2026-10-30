@@ -392,7 +392,7 @@ export function createApp(
 			),
 		];
 		return c.body(
-			`<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls.map((url) => `<url><loc>${url.replaceAll("&", "&amp;").replaceAll("<", "&lt;")}</loc></url>`).join("")}</urlset>`,
+			`<?xml version="1.0" encoding="UTF-8"?><?xml-stylesheet type="text/css" href="/assets/sitemap-6cef9e89.css"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls.map((url) => `<url><loc>${url.replaceAll("&", "&amp;").replaceAll("<", "&lt;")}</loc></url>`).join("")}</urlset>`,
 			200,
 			{ "Content-Type": "application/xml; charset=UTF-8" },
 		);
