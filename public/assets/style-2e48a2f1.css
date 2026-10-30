@@ -45,3 +45,13 @@ a:focus-visible {
 	outline: 3px solid #9b321e;
 	outline-offset: 4px;
 }
+header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem 2rem; }
+header p { flex-basis: 100%; margin: 0; }
+a { color: #174a3b; }
+a:hover { text-decoration-thickness: .16em; }
+nav { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; }
+nav a { display: inline-block; padding: .5rem 0; }
+.post-list { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr)); gap: 1rem; }
+.post-list li { border: 1px solid #9aab9f; padding: 1rem; background: #fffdf7; }
+.post-list h2 { font-size: 1.2rem; margin: 0 0 .5rem; }
+.gallery { grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 32rem)); }

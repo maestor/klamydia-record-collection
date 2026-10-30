@@ -5,11 +5,11 @@ import { createClient } from "@libsql/client";
 import { createApp } from "./app.js";
 import { environment } from "./env.js";
 
-const { databaseUrl, port } = environment(process.env);
+const { databaseUrl, port, siteUrl } = environment(process.env);
 await access(databaseUrl.slice(5));
 const db = createClient({ url: databaseUrl });
 await db.execute("PRAGMA query_only = ON");
-const app = createApp(db);
+const app = createApp(db, siteUrl);
 app.get(
 	"/assets/*",
 	serveStatic({

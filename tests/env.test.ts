@@ -6,10 +6,15 @@ describe("local configuration", () => {
 		expect(environment({})).toEqual({
 			databaseUrl: "file:.data/demo.db",
 			port: 3000,
+			siteUrl: "http://localhost:3000",
 		});
 		expect(
 			environment({ DATABASE_URL: "file:/tmp/demo.db", PORT: "3107" }),
-		).toEqual({ databaseUrl: "file:/tmp/demo.db", port: 3107 });
+		).toEqual({
+			databaseUrl: "file:/tmp/demo.db",
+			port: 3107,
+			siteUrl: "http://localhost:3107",
+		});
 	});
 	it("rejects remote or ambiguous database targets and invalid ports", () => {
 		for (const DATABASE_URL of [
@@ -18,6 +23,12 @@ describe("local configuration", () => {
 			"file::memory:",
 		])
 			expect(() => environment({ DATABASE_URL })).toThrow();
+		for (const SITE_URL of [
+			"https://example.com/path",
+			"ftp://example.com",
+			"https://user:pass@example.com",
+		])
+			expect(() => environment({ SITE_URL })).toThrow();
 		for (const PORT of ["0", "65536", "abc", "1.5"])
 			expect(() => environment({ PORT })).toThrow();
 	});

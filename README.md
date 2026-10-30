@@ -1,6 +1,6 @@
 # Klamydiakokoelma
 
-A local, fixture-backed starting point for a Finnish record collection. Hono renders pages from SQLite; the current content and image are synthetic examples, not release information. The importer and public browsing pages are not implemented yet.
+A local, fixture-backed starting point for a Finnish record collection. Hono renders pages from SQLite; the current content and images are synthetic examples, not release information. The importer is not implemented yet.
 
 Use Node 24 and npm 11.19.1. From the repository root:
 
@@ -11,4 +11,4 @@ npm run seed:demo
 npm run dev
 ```
 
-Open http://localhost:3000/posts/esimerkki. No credentials are required. Configuration uses environment variables (see [.env.example](.env.example)); no `.env` file is loaded automatically. See [development and security](docs/development.md) for commands, data boundaries and verification.
+Open http://localhost:3000/. No credentials are required. Configuration uses environment variables (see [.env.example](.env.example)); no `.env` file is loaded automatically. See [development and security](docs/development.md) for commands, data boundaries and verification.

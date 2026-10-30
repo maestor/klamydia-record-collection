@@ -1,9 +1,330 @@
-{
-	"slug": "esimerkki",
-	"title": "Esimerkkijulkaisu",
-	"published_at": "2026-01-01",
-	"description": "Tämä on kuvitteellinen esimerkki kokoelman julkaisusivusta.\n\nKuvaus säilyy kokonaisena, myös ääkköset ja rivinvaihdot.",
-	"images": [
-		{ "url": "/media/example-248e687c.svg", "alt": "Kuvitteellinen levykansi" }
-	]
-}
+[
+	{
+		"slug": "esimerkki",
+		"title": "Esimerkkijulkaisu",
+		"published_at": "2026-01-01",
+		"description": "Tämä on kuvitteellinen esimerkki kokoelman julkaisusivusta. Äänilevyn ja kansikuvien yksityiskohdat on keksitty tätä esittelyä varten. Pitkä kuvaus antaa tilaa tarkastella, miten teksti asettuu myös pienellä näytöllä.\n\nToisessa kappaleessa on ääkkösiä, välimerkkejä sekä turvallisesti näytettävää tekstiä: <script>esimerkki</script> & ystävät. Tämä ei kuvaa todellista julkaisua tai painosta.",
+		"images": [
+			{
+				"url": "/media/example-248e687c.svg",
+				"alt": "Kuvitteellinen levykansi"
+			},
+			{
+				"url": "/media/example-2-9784e620.svg",
+				"alt": "Kuvitteellinen toinen kuva"
+			}
+		]
+	},
+	{
+		"slug": "esimerkki-02",
+		"title": "Esimerkkijulkaisu 02",
+		"published_at": "2026-01-02",
+		"description": "",
+		"images": [
+			{
+				"url": "/media/example-248e687c.svg",
+				"alt": "Kuvitteellinen levykansi"
+			}
+		]
+	},
+	{
+		"slug": "esimerkki-03",
+		"title": "Esimerkkijulkaisu 03",
+		"published_at": "2026-01-03",
+		"description": "Kuvitteellinen esimerkkijulkaisu 03. Tämä teksti ei sisällä oikeita julkaisutietoja.\n\nÄäkköset ja rivinvaihdot säilyvät.",
+		"images": [
+			{
+				"url": "/media/example-248e687c.svg",
+				"alt": "Kuvitteellinen levykansi"
+			}
+		]
+	},
+	{
+		"slug": "esimerkki-04",
+		"title": "Esimerkkijulkaisu 04",
+		"published_at": "2026-01-04",
+		"description": "Kuvitteellinen esimerkkijulkaisu 04. Tämä teksti ei sisällä oikeita julkaisutietoja.\n\nÄäkköset ja rivinvaihdot säilyvät.",
+		"images": [
+			{
+				"url": "/media/example-248e687c.svg",
+				"alt": "Kuvitteellinen levykansi"
+			}
+		]
+	},
+	{
+		"slug": "esimerkki-05",
+		"title": "Esimerkkijulkaisu 05",
+		"published_at": "2026-01-05",
+		"description": "Kuvitteellinen esimerkkijulkaisu 05. Tämä teksti ei sisällä oikeita julkaisutietoja.\n\nÄäkköset ja rivinvaihdot säilyvät.",
+		"images": [
+			{
+				"url": "/media/example-248e687c.svg",
+				"alt": "Kuvitteellinen levykansi"
+			}
+		]
+	},
+	{
+		"slug": "esimerkki-06",
+		"title": "Esimerkkijulkaisu 06",
+		"published_at": "2026-01-06",
+		"description": "Kuvitteellinen esimerkkijulkaisu 06. Tämä teksti ei sisällä oikeita julkaisutietoja.\n\nÄäkköset ja rivinvaihdot säilyvät.",
+		"images": [
+			{
+				"url": "/media/example-248e687c.svg",
+				"alt": "Kuvitteellinen levykansi"
+			}
+		]
+	},
+	{
+		"slug": "esimerkki-07",
+		"title": "Esimerkkijulkaisu 07",
+		"published_at": "2026-01-07",
+		"description": "Kuvitteellinen esimerkkijulkaisu 07. Tämä teksti ei sisällä oikeita julkaisutietoja.\n\nÄäkköset ja rivinvaihdot säilyvät.",
+		"images": [
+			{
+				"url": "/media/example-248e687c.svg",
+				"alt": "Kuvitteellinen levykansi"
+			}
+		]
+	},
+	{
+		"slug": "esimerkki-08",
+		"title": "Esimerkkijulkaisu 08",
+		"published_at": "2026-01-08",
+		"description": "Kuvitteellinen esimerkkijulkaisu 08. Tämä teksti ei sisällä oikeita julkaisutietoja.\n\nÄäkköset ja rivinvaihdot säilyvät.",
+		"images": [
+			{
+				"url": "/media/example-248e687c.svg",
+				"alt": "Kuvitteellinen levykansi"
+			}
+		]
+	},
+	{
+		"slug": "esimerkki-09",
+		"title": "Esimerkkijulkaisu 09",
+		"published_at": "2026-01-09",
+		"description": "Kuvitteellinen esimerkkijulkaisu 09. Tämä teksti ei sisällä oikeita julkaisutietoja.\n\nÄäkköset ja rivinvaihdot säilyvät.",
+		"images": [
+			{
+				"url": "/media/example-248e687c.svg",
+				"alt": "Kuvitteellinen levykansi"
+			}
+		]
+	},
+	{
+		"slug": "esimerkki-10",
+		"title": "Esimerkkijulkaisu 10",
+		"published_at": "2026-01-10",
+		"description": "Kuvitteellinen esimerkkijulkaisu 10. Tämä teksti ei sisällä oikeita julkaisutietoja.\n\nÄäkköset ja rivinvaihdot säilyvät.",
+		"images": [
+			{
+				"url": "/media/example-248e687c.svg",
+				"alt": "Kuvitteellinen levykansi"
+			}
+		]
+	},
+	{
+		"slug": "esimerkki-11",
+		"title": "Esimerkkijulkaisu 11",
+		"published_at": "2026-01-11",
+		"description": "Kuvitteellinen esimerkkijulkaisu 11. Tämä teksti ei sisällä oikeita julkaisutietoja.\n\nÄäkköset ja rivinvaihdot säilyvät.",
+		"images": [
+			{
+				"url": "/media/example-248e687c.svg",
+				"alt": "Kuvitteellinen levykansi"
+			}
+		]
+	},
+	{
+		"slug": "esimerkki-12",
+		"title": "Esimerkkijulkaisu 12",
+		"published_at": "2026-01-12",
+		"description": "Kuvitteellinen esimerkkijulkaisu 12. Tämä teksti ei sisällä oikeita julkaisutietoja.\n\nÄäkköset ja rivinvaihdot säilyvät.",
+		"images": [
+			{
+				"url": "/media/example-248e687c.svg",
+				"alt": "Kuvitteellinen levykansi"
+			}
+		]
+	},
+	{
+		"slug": "esimerkki-13",
+		"title": "Esimerkkijulkaisu 13",
+		"published_at": "2026-01-13",
+		"description": "Kuvitteellinen esimerkkijulkaisu 13. Tämä teksti ei sisällä oikeita julkaisutietoja.\n\nÄäkköset ja rivinvaihdot säilyvät.",
+		"images": [
+			{
+				"url": "/media/example-248e687c.svg",
+				"alt": "Kuvitteellinen levykansi"
+			}
+		]
+	},
+	{
+		"slug": "esimerkki-14",
+		"title": "Esimerkkijulkaisu 14",
+		"published_at": "2026-01-14",
+		"description": "Kuvitteellinen esimerkkijulkaisu 14. Tämä teksti ei sisällä oikeita julkaisutietoja.\n\nÄäkköset ja rivinvaihdot säilyvät.",
+		"images": [
+			{
+				"url": "/media/example-248e687c.svg",
+				"alt": "Kuvitteellinen levykansi"
+			}
+		]
+	},
+	{
+		"slug": "esimerkki-15",
+		"title": "Esimerkkijulkaisu 15",
+		"published_at": "2026-01-15",
+		"description": "Kuvitteellinen esimerkkijulkaisu 15. Tämä teksti ei sisällä oikeita julkaisutietoja.\n\nÄäkköset ja rivinvaihdot säilyvät.",
+		"images": [
+			{
+				"url": "/media/example-248e687c.svg",
+				"alt": "Kuvitteellinen levykansi"
+			}
+		]
+	},
+	{
+		"slug": "esimerkki-16",
+		"title": "Esimerkkijulkaisu 16",
+		"published_at": "2026-01-16",
+		"description": "Kuvitteellinen esimerkkijulkaisu 16. Tämä teksti ei sisällä oikeita julkaisutietoja.\n\nÄäkköset ja rivinvaihdot säilyvät.",
+		"images": [
+			{
+				"url": "/media/example-248e687c.svg",
+				"alt": "Kuvitteellinen levykansi"
+			}
+		]
+	},
+	{
+		"slug": "esimerkki-17",
+		"title": "Esimerkkijulkaisu 17",
+		"published_at": "2026-01-17",
+		"description": "Kuvitteellinen esimerkkijulkaisu 17. Tämä teksti ei sisällä oikeita julkaisutietoja.\n\nÄäkköset ja rivinvaihdot säilyvät.",
+		"images": [
+			{
+				"url": "/media/example-248e687c.svg",
+				"alt": "Kuvitteellinen levykansi"
+			}
+		]
+	},
+	{
+		"slug": "esimerkki-18",
+		"title": "Esimerkkijulkaisu 18",
+		"published_at": "2026-01-18",
+		"description": "Kuvitteellinen esimerkkijulkaisu 18. Tämä teksti ei sisällä oikeita julkaisutietoja.\n\nÄäkköset ja rivinvaihdot säilyvät.",
+		"images": [
+			{
+				"url": "/media/example-248e687c.svg",
+				"alt": "Kuvitteellinen levykansi"
+			}
+		]
+	},
+	{
+		"slug": "esimerkki-19",
+		"title": "Esimerkkijulkaisu 19",
+		"published_at": "2026-01-19",
+		"description": "Kuvitteellinen esimerkkijulkaisu 19. Tämä teksti ei sisällä oikeita julkaisutietoja.\n\nÄäkköset ja rivinvaihdot säilyvät.",
+		"images": [
+			{
+				"url": "/media/example-248e687c.svg",
+				"alt": "Kuvitteellinen levykansi"
+			}
+		]
+	},
+	{
+		"slug": "esimerkki-20",
+		"title": "Esimerkkijulkaisu 20",
+		"published_at": "2026-01-20",
+		"description": "Kuvitteellinen esimerkkijulkaisu 20. Tämä teksti ei sisällä oikeita julkaisutietoja.\n\nÄäkköset ja rivinvaihdot säilyvät.",
+		"images": [
+			{
+				"url": "/media/example-248e687c.svg",
+				"alt": "Kuvitteellinen levykansi"
+			}
+		]
+	},
+	{
+		"slug": "esimerkki-21",
+		"title": "Esimerkkijulkaisu 21",
+		"published_at": "2026-01-21",
+		"description": "Kuvitteellinen esimerkkijulkaisu 21. Tämä teksti ei sisällä oikeita julkaisutietoja.\n\nÄäkköset ja rivinvaihdot säilyvät.",
+		"images": [
+			{
+				"url": "/media/example-248e687c.svg",
+				"alt": "Kuvitteellinen levykansi"
+			}
+		]
+	},
+	{
+		"slug": "esimerkki-22",
+		"title": "Esimerkkijulkaisu 22",
+		"published_at": "2026-01-22",
+		"description": "Kuvitteellinen esimerkkijulkaisu 22. Tämä teksti ei sisällä oikeita julkaisutietoja.\n\nÄäkköset ja rivinvaihdot säilyvät.",
+		"images": [
+			{
+				"url": "/media/example-248e687c.svg",
+				"alt": "Kuvitteellinen levykansi"
+			}
+		]
+	},
+	{
+		"slug": "esimerkki-23",
+		"title": "Esimerkkijulkaisu 23",
+		"published_at": "2026-01-23",
+		"description": "Kuvitteellinen esimerkkijulkaisu 23. Tämä teksti ei sisällä oikeita julkaisutietoja.\n\nÄäkköset ja rivinvaihdot säilyvät.",
+		"images": [
+			{
+				"url": "/media/example-248e687c.svg",
+				"alt": "Kuvitteellinen levykansi"
+			}
+		]
+	},
+	{
+		"slug": "esimerkki-24",
+		"title": "Esimerkkijulkaisu 24",
+		"published_at": "2026-01-24",
+		"description": "Kuvitteellinen esimerkkijulkaisu 24. Tämä teksti ei sisällä oikeita julkaisutietoja.\n\nÄäkköset ja rivinvaihdot säilyvät.",
+		"images": [
+			{
+				"url": "/media/example-248e687c.svg",
+				"alt": "Kuvitteellinen levykansi"
+			}
+		]
+	},
+	{
+		"slug": "esimerkki-25",
+		"title": "Esimerkkijulkaisu 25",
+		"published_at": "2026-01-25",
+		"description": "Kuvitteellinen esimerkkijulkaisu 25. Tämä teksti ei sisällä oikeita julkaisutietoja.\n\nÄäkköset ja rivinvaihdot säilyvät.",
+		"images": [
+			{
+				"url": "/media/example-248e687c.svg",
+				"alt": "Kuvitteellinen levykansi"
+			}
+		]
+	},
+	{
+		"slug": "esimerkki-26",
+		"title": "Esimerkkijulkaisu 26",
+		"published_at": "2026-01-26",
+		"description": "Kuvitteellinen esimerkkijulkaisu 26. Tämä teksti ei sisällä oikeita julkaisutietoja.\n\nÄäkköset ja rivinvaihdot säilyvät.",
+		"images": [
+			{
+				"url": "/media/example-248e687c.svg",
+				"alt": "Kuvitteellinen levykansi"
+			}
+		]
+	},
+	{
+		"slug": "esimerkki-27",
+		"title": "Esimerkkijulkaisu 27",
+		"published_at": "2026-01-27",
+		"description": "Kuvitteellinen esimerkkijulkaisu 27. Tämä teksti ei sisällä oikeita julkaisutietoja.\n\nÄäkköset ja rivinvaihdot säilyvät.",
+		"images": [
+			{
+				"url": "/media/example-248e687c.svg",
+				"alt": "Kuvitteellinen levykansi"
+			}
+		]
+	}
+]

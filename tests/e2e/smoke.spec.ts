@@ -14,6 +14,14 @@ test("a visitor can read a direct fixture page without JavaScript", async ({
 		await expect(
 			page.getByRole("img", { name: "Kuvitteellinen levykansi" }),
 		).toBeVisible();
+		await expect(
+			page.getByRole("img", { name: "Kuvitteellinen toinen kuva" }),
+		).toBeVisible();
+		expect(
+			await page
+				.getByRole("img", { name: "Kuvitteellinen toinen kuva" })
+				.evaluate((img: HTMLImageElement) => img.naturalWidth),
+		).toBe(640);
 		await page.reload();
 	} finally {
 		await context.close();
@@ -25,8 +33,35 @@ test("fixture page has no automated accessibility violations", async ({
 }) => {
 	await page.goto("/posts/esimerkki");
 	expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
-	await page.screenshot({
-		path: "/tmp/klamydia-foundation.png",
-		fullPage: true,
-	});
+});
+
+test("browses pages with keyboard and browser history without scripts", async ({
+	browser,
+}) => {
+	const context = await browser.newContext({ javaScriptEnabled: false });
+	try {
+		const page = await context.newPage();
+		await page.goto("/");
+		await page.keyboard.press("Tab");
+		await expect(
+			page.getByRole("link", { name: "Klamydiakokoelma" }),
+		).toBeFocused();
+		await page.getByRole("link", { name: "Esimerkkijulkaisu 27" }).click();
+		await expect(page).toHaveURL(/posts\/esimerkki-27$/);
+		await page.reload();
+		await page.getByRole("link", { name: "Takaisin arkistoon" }).click();
+		await page.getByRole("link", { name: "Vanhemmat" }).click();
+		await expect(page).toHaveURL(/page=2/);
+		await page.getByRole("link", { name: "Vanhemmat" }).click();
+		await expect(page.getByText("Sivu 3")).toBeVisible();
+		await page.getByRole("link", { name: "Esimerkkijulkaisu 03" }).click();
+		await page.getByRole("link", { name: "Takaisin arkistoon" }).click();
+		await expect(page.getByText("Sivu 3")).toBeVisible();
+		await page.goBack();
+		await page.goBack();
+		await page.goBack();
+		await expect(page.getByText("Sivu 2")).toBeVisible();
+	} finally {
+		await context.close();
+	}
 });
