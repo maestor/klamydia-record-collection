@@ -1,5 +1,7 @@
 import type { Client } from "@libsql/client";
 
+export const ABOUT_MEDIA_ID = "17970239393043334";
+
 export type PostSummary = {
 	slug: string;
 	title: string;
@@ -19,8 +21,9 @@ export async function listPosts(db: Client, limit: number, offset = 0) {
 			FROM posts p
 			LEFT JOIN images i ON i.post_slug = p.slug AND i.position = (SELECT MIN(first.position) FROM images first WHERE first.post_slug = p.slug)
 			LEFT JOIN instagram_images ii ON ii.post_slug = i.post_slug AND ii.position = i.position
+			WHERE NOT EXISTS (SELECT 1 FROM instagram_posts ip WHERE ip.post_slug = p.slug AND ip.media_id = ?)
 			ORDER BY p.published_at DESC, p.slug DESC LIMIT ? OFFSET ?`,
-			args: [limit, offset],
+			args: [ABOUT_MEDIA_ID, limit, offset],
 		})
 	).rows.map(
 		(row): PostSummary => ({
@@ -57,4 +60,13 @@ export async function getTags(db: Client, slug: string) {
 			args: [slug],
 		})
 	).rows;
+}
+
+export async function getAboutPost(db: Client) {
+	return (
+		await db.execute({
+			sql: "SELECT p.slug, p.title, p.description FROM posts p JOIN instagram_posts ip ON ip.post_slug = p.slug WHERE ip.media_id = ?",
+			args: [ABOUT_MEDIA_ID],
+		})
+	).rows[0];
 }

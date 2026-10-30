@@ -37,6 +37,32 @@ for (const post of fixtures) {
 		});
 	}
 }
+await db.execute({
+	sql: "INSERT INTO posts VALUES (?, ?, ?, ?)",
+	args: [
+		"about-fixture",
+		"Johdanto",
+		"2023-01-02",
+		"Tämä on kuvitteellinen esittely.\n\n#kokoelma",
+	],
+});
+await db.execute({
+	sql: "INSERT INTO instagram_posts VALUES (?, ?, ?, ?, ?, ?)",
+	args: [
+		"17970239393043334",
+		"about-fixture",
+		"https://www.instagram.com/p/example/",
+		"fixture",
+		"IMAGE",
+		"2023-01-02",
+	],
+});
+const aboutFilename = `${createHash("sha256").update("about-fixture").digest("hex")}.jpg`;
+images.set(aboutFilename, "tests/fixtures/media/example.svg");
+await db.execute({
+	sql: "INSERT INTO images VALUES (?, ?, ?, ?)",
+	args: ["about-fixture", 1, `/media/${aboutFilename}`, "Kuva"],
+});
 const base = "http://127.0.0.1:3107";
 const app = createApp(db, base, {
 	endpoint: base,
