@@ -10,10 +10,8 @@
 	"scripts": {
 		"dev": "node --env-file-if-exists=.env --watch --import tsx src/server.ts",
 		"db:migrate": "node --import tsx scripts/migrate.ts",
-		"seed:demo": "node --import tsx scripts/seed.ts",
 		"instagram:check": "node --env-file-if-exists=.env --import tsx scripts/instagram-access.ts",
 		"import:instagram": "node --env-file-if-exists=.env --import tsx scripts/import-instagram.ts",
-		"r2:copy": "node --env-file-if-exists=.env --import tsx scripts/r2-copy.ts",
 		"r2:restore": "node --env-file-if-exists=.env --import tsx scripts/r2-restore.ts",
 		"typecheck": "tsc --noEmit",
 		"lint": "biome check src scripts tests package.json tsconfig.json tsconfig.build.json vitest.config.ts playwright.config.ts",

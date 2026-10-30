@@ -1,8 +1,8 @@
 import { createClient } from "@libsql/client";
 import { within } from "@testing-library/dom";
 import { describe, expect, it } from "vitest";
-import { createApp } from "../src/app.js";
 import { migrate } from "../src/db.js";
+import { createTestApp as createApp } from "./helpers.js";
 
 describe("collection browsing", () => {
 	it("shows recent posts and paginates the archive newest first", async () => {
@@ -23,9 +23,6 @@ describe("collection browsing", () => {
 			let response = await app.request("/");
 			expect(response.status).toBe(200);
 			document.documentElement.innerHTML = await response.text();
-			expect(
-				within(document.body).getByText(/Arkisto sisältää esimerkkisisältöä/),
-			).toBeTruthy();
 			expect(
 				within(document.body)
 					.getByRole("link", { name: "Esimerkki 27" })

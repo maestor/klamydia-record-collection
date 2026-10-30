@@ -2,7 +2,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { link, mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { Client } from "@libsql/client";
-import { collectionMediaNames } from "./copy-r2-media.js";
+import { collectionMediaNames } from "./collection-media.js";
 
 export async function restoreCollectionMedia(
 	db: Client,

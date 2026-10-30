@@ -28,13 +28,10 @@ try {
 			"Set DATABASE_URL to an existing local SQLite database; see docs/instagram-access.md.",
 		);
 	const { databaseUrl } = environment(process.env);
-	const mode = process.env.R2_MEDIA_MODE ?? "local";
-	if (!["local", "r2"].includes(mode))
-		throw new Error("R2_MEDIA_MODE must be local or r2.");
 	let putImage:
 		| ((filename: string, bytes: Buffer) => Promise<void>)
 		| undefined;
-	if (mode === "r2" && !dryRun) {
+	if (!dryRun) {
 		const address = r2Address(process.env);
 		const writer = r2Client(
 			address,
@@ -76,7 +73,6 @@ try {
 		try {
 			const result = await importInstagram({
 				db,
-				mediaDir: ".data/media",
 				accountId: process.env.INSTAGRAM_ACCOUNT_ID ?? "",
 				token: process.env.INSTAGRAM_ACCESS_TOKEN ?? "",
 				limit,

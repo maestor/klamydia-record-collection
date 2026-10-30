@@ -7,9 +7,8 @@ const Layout: FC<
 		title: string;
 		canonical?: string;
 		description?: string;
-		demo: boolean;
 	}>
-> = ({ title, canonical, description, demo, children }) => (
+> = ({ title, canonical, description, children }) => (
 	<html lang="fi">
 		<head>
 			<meta charSet="utf-8" />
@@ -28,12 +27,6 @@ const Layout: FC<
 				<nav aria-label="Päävalikko">
 					<a href="/archive">Arkisto</a>
 				</nav>
-				{demo && (
-					<p>
-						Arkisto sisältää esimerkkisisältöä, joka ei kuvaa oikeita
-						julkaisuja.
-					</p>
-				)}
 			</header>
 			<main>{children}</main>
 		</body>
@@ -64,28 +57,15 @@ const PostList: FC<{ posts: Row[]; page?: number }> = ({ posts, page }) =>
 	);
 export function createApp(
 	db: Client,
-	siteUrl = "http://localhost:3000",
-	media?: { endpoint: string; sign: (filename: string) => Promise<string> },
+	siteUrl: string,
+	media: { endpoint: string; sign: (filename: string) => Promise<string> },
 ) {
-	const app = new Hono<{ Variables: { demo: boolean } }>();
-	app.use("*", async (c, next) => {
-		if (
-			!c.req.path.startsWith("/assets/") &&
-			!c.req.path.startsWith("/media/") &&
-			c.req.path !== "/sitemap.xml"
-		) {
-			const result = await db.execute(
-				"SELECT EXISTS(SELECT 1 FROM posts LEFT JOIN instagram_posts ON instagram_posts.post_slug = posts.slug WHERE instagram_posts.media_id IS NULL) AS present",
-			);
-			c.set("demo", Boolean(result.rows[0].present));
-		}
-		await next();
-	});
+	const app = new Hono();
 	app.use("*", async (c, next) => {
 		await next();
 		c.header(
 			"Content-Security-Policy",
-			`default-src 'none'; img-src 'self'${media ? ` ${media.endpoint}` : ""}; style-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'`,
+			`default-src 'none'; img-src 'self' ${media.endpoint}; style-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'`,
 		);
 		c.header("X-Content-Type-Options", "nosniff");
 		c.header("Referrer-Policy", "strict-origin-when-cross-origin");
@@ -93,33 +73,32 @@ export function createApp(
 			"Cache-Control",
 			c.res.status !== 200
 				? "no-store"
-				: c.req.path.startsWith("/assets/") || c.req.path.startsWith("/media/")
+				: c.req.path.startsWith("/assets/")
 					? "public, max-age=31536000, immutable"
 					: "public, max-age=0, s-maxage=300, stale-while-revalidate=60",
 		);
 	});
-	if (media)
-		app.get("/media/:filename", async (c) => {
-			const filename = c.req.param("filename");
-			if (!/^[a-f0-9]{64}\.jpg$/.test(filename)) return c.notFound();
-			const path = `/media/${filename}`;
-			const found = await db.execute({
-				sql: "SELECT 1 FROM images WHERE url = ? UNION ALL SELECT 1 FROM instagram_images WHERE preview_url = ? LIMIT 1",
-				args: [path, path],
-			});
-			if (!found.rows.length) return c.notFound();
-			try {
-				return c.redirect(await media.sign(filename), 302);
-			} catch {
-				return c.text("Image temporarily unavailable", 503);
-			}
+	app.get("/media/:filename", async (c) => {
+		const filename = c.req.param("filename");
+		if (!/^[a-f0-9]{64}\.jpg$/.test(filename)) return c.notFound();
+		const path = `/media/${filename}`;
+		const found = await db.execute({
+			sql: "SELECT 1 FROM images WHERE url = ? UNION ALL SELECT 1 FROM instagram_images WHERE preview_url = ? LIMIT 1",
+			args: [path, path],
 		});
+		if (!found.rows.length) return c.notFound();
+		try {
+			return c.redirect(await media.sign(filename), 302);
+		} catch {
+			return c.text("Image temporarily unavailable", 503);
+		}
+	});
 	app.get("/", async (c) => {
 		const posts = await db.execute(
 			"SELECT slug, title, published_at FROM posts ORDER BY published_at DESC, slug DESC LIMIT 6",
 		);
 		return c.html(
-			<Layout title="Etusivu" canonical={`${siteUrl}/`} demo={c.get("demo")}>
+			<Layout title="Etusivu" canonical={`${siteUrl}/`}>
 				<h1>Klamydiakokoelma</h1>
 				<p>Tutustu kokoelman julkaisuihin.</p>
 				<h2>Uusimmat julkaisut</h2>
@@ -131,7 +110,7 @@ export function createApp(
 		const raw = c.req.query("page");
 		if (raw !== undefined && !/^[1-9]\d{0,5}$/.test(raw))
 			return c.html(
-				<Layout title="Virheellinen sivu" demo={c.get("demo")}>
+				<Layout title="Virheellinen sivu">
 					<h1>Virheellinen sivunumero</h1>
 					<a href="/archive">Siirry arkistoon</a>
 				</Layout>,
@@ -145,7 +124,6 @@ export function createApp(
 		return c.html(
 			<Layout
 				title="Arkisto"
-				demo={c.get("demo")}
 				canonical={`${siteUrl}/archive${page > 1 ? `?page=${page}` : ""}`}
 			>
 				<h1>Arkisto</h1>
@@ -189,7 +167,7 @@ export function createApp(
 		const post = result.rows[0];
 		if (!post)
 			return c.html(
-				<Layout title="Ei löytynyt" demo={c.get("demo")}>
+				<Layout title="Ei löytynyt">
 					<h1>Julkaisua ei löytynyt</h1>
 					<a href="/archive">Siirry arkistoon</a>
 				</Layout>,
@@ -202,7 +180,6 @@ export function createApp(
 		return c.html(
 			<Layout
 				title={String(post.title)}
-				demo={c.get("demo")}
 				canonical={`${siteUrl}/posts/${encodeURIComponent(String(post.slug))}`}
 				description={String(post.description).slice(0, 160)}
 			>
@@ -216,13 +193,13 @@ export function createApp(
 					<div class="gallery">
 						{images.rows
 							.filter((image) =>
-								/^\/media\/[a-zA-Z0-9._-]+$/.test(String(image.url)),
+								/^\/media\/[a-f0-9]{64}\.jpg$/.test(String(image.url)),
 							)
 							.map((image) => (
 								<a href={String(image.url)}>
 									<img
 										src={
-											/^\/media\/[a-zA-Z0-9._-]+$/.test(
+											/^\/media\/[a-f0-9]{64}\.jpg$/.test(
 												String(image.preview_url),
 											)
 												? String(image.preview_url)
