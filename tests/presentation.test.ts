@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { formatDate } from "../src/i18n/fi.js";
-import { presentDescription } from "../src/presentation/description.js";
+import { formatDate } from "#i18n/fi";
+import { presentDescription } from "#presentation/description";
 
 describe("post reading presentation", () => {
 	it("removes only a matching normalized leading title and cleans hashtag blocks", () => {

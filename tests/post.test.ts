@@ -209,3 +209,74 @@ it("uses an honest per-image fallback without overwriting owner descriptions", a
 		db.close();
 	}
 });
+
+it("keeps unsafe media and source links out of the reading view", async () => {
+	const db = createClient({ url: "file::memory:" });
+	try {
+		await migrate(db);
+		await db.execute({
+			sql: "INSERT INTO posts VALUES (?, ?, ?, ?)",
+			args: ["safe-links", "Levy", "2026-01-01", "Teksti"],
+		});
+		const full = `/media/${"a".repeat(64)}.jpg`;
+		await db.execute({
+			sql: "INSERT INTO images VALUES (?, ?, ?, ?), (?, ?, ?, ?)",
+			args: [
+				"safe-links",
+				1,
+				"https://untrusted.example/image.jpg",
+				"Ulkoinen",
+				"safe-links",
+				2,
+				full,
+				"   ",
+			],
+		});
+		await db.execute({
+			sql: "INSERT INTO instagram_images VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+			args: [
+				"safe-links",
+				2,
+				"123",
+				320,
+				200,
+				"jpeg",
+				"hash",
+				"javascript:alert(1)",
+			],
+		});
+		await db.execute({
+			sql: "INSERT INTO instagram_posts VALUES (?, ?, ?, ?, ?, ?)",
+			args: [
+				"123",
+				"safe-links",
+				"https://untrusted.example/p/test/",
+				"x",
+				"IMAGE",
+				"2026-01-01",
+			],
+		});
+		document.documentElement.innerHTML = await (
+			await createApp(db).request("/posts/safe-links?page=2&through=1")
+		).text();
+		const page = within(document.body);
+		const image = page.getByRole("img", { name: "Julkaisun Levy kuva 1 / 1" });
+		expect(page.getAllByRole("img")).toHaveLength(1);
+		expect(image.getAttribute("src")).toBe(full);
+		expect(image.getAttribute("width")).toBe("320");
+		expect(image.getAttribute("height")).toBe("200");
+		expect(image.getAttribute("srcset")).toBeNull();
+		expect(image.closest("a")?.getAttribute("href")).toBe(full);
+		expect(image.closest("a")?.getAttribute("data-preview")).toBeNull();
+		expect(
+			page.queryByRole("link", { name: "Alkuperäinen julkaisu" }),
+		).toBeNull();
+		expect(
+			page
+				.getByRole("link", { name: "Takaisin arkistoon" })
+				.getAttribute("href"),
+		).toBe("/archive");
+	} finally {
+		db.close();
+	}
+});

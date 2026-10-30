@@ -135,6 +135,14 @@ it("shows the first preview as a linked card and offers the complete archive", a
 			sql: "INSERT INTO instagram_images VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
 			args: ["record", 1, "11", 1200, 800, "jpeg", "hash", preview],
 		});
+		await db.execute({
+			sql: "INSERT INTO posts VALUES (?, ?, ?, ?)",
+			args: ["older", "Vanhempi", "2026-01-01", "Teksti"],
+		});
+		await db.execute({
+			sql: "INSERT INTO images VALUES (?, ?, ?, ?)",
+			args: ["older", 1, original, "Kansi"],
+		});
 		const app = createApp(db);
 		for (const path of ["/", "/archive"]) {
 			document.documentElement.innerHTML = await (
@@ -147,7 +155,14 @@ it("shows the first preview as a linked card and offers the complete archive", a
 			expect(image?.getAttribute("alt")).toBe("");
 			expect(image?.getAttribute("width")).toBe("640");
 			expect(image?.getAttribute("height")).toBe("427");
+			expect(image?.getAttribute("loading")).toBe("eager");
 			expect(link.closest("article")?.textContent).toContain("2 kuvaa");
+			const olderImage = within(document.body)
+				.getByRole("link", { name: "Vanhempi" })
+				.querySelector("img");
+			expect(olderImage?.getAttribute("loading")).toBe("lazy");
+			expect(olderImage?.getAttribute("width")).toBeNull();
+			expect(olderImage?.getAttribute("height")).toBeNull();
 		}
 		document.documentElement.innerHTML = await (await app.request("/")).text();
 		expect(
@@ -155,6 +170,40 @@ it("shows the first preview as a linked card and offers the complete archive", a
 				.getByRole("link", { name: "Kaikki julkaisut" })
 				.getAttribute("href"),
 		).toBe("/archive");
+	} finally {
+		db.close();
+	}
+});
+
+it("continues with ordinary navigation after twenty accumulated archive batches", async () => {
+	const db = createClient({ url: "file::memory:" });
+	try {
+		await migrate(db);
+		await db.batch(
+			Array.from({ length: 241 }, (_, index) => ({
+				sql: "INSERT INTO posts VALUES (?, ?, ?, ?)",
+				args: [`record-${index}`, `Levy ${index}`, "2026-01-01", "Teksti"],
+			})),
+		);
+		const app = createApp(db);
+		document.documentElement.innerHTML = await (
+			await app.request("/archive?page=1&through=20")
+		).text();
+		const next = within(document.body).getByRole("link", {
+			name: "Seuraavat julkaisut",
+		});
+		expect(next.getAttribute("href")).toBe("/archive?page=21");
+		expect(next.getAttribute("data-enhance")).toBe("false");
+		expect(document.querySelectorAll(".post-card")).toHaveLength(240);
+		document.documentElement.innerHTML = await (
+			await app.request("/archive?page=21")
+		).text();
+		expect(
+			within(document.body).getByText("Kaikki julkaisut näytetty.", {
+				exact: true,
+			}),
+		).toBeTruthy();
+		expect(document.querySelectorAll(".post-card")).toHaveLength(1);
 	} finally {
 		db.close();
 	}
