@@ -12,6 +12,7 @@
 		"db:migrate": "node --import tsx scripts/migrate.ts",
 		"seed:demo": "node --import tsx scripts/seed.ts",
 		"instagram:check": "node --env-file-if-exists=.env --import tsx scripts/instagram-access.ts",
+		"import:instagram": "node --env-file-if-exists=.env --import tsx scripts/import-instagram.ts",
 		"typecheck": "tsc --noEmit",
 		"lint": "biome check src scripts tests package.json tsconfig.json tsconfig.build.json vitest.config.ts playwright.config.ts",
 		"test": "vitest run",
@@ -24,7 +25,8 @@
 	"dependencies": {
 		"@hono/node-server": "2.1.5",
 		"@libsql/client": "0.18.0",
-		"hono": "4.13.14"
+		"hono": "4.13.14",
+		"sharp": "0.35.5"
 	},
 	"devDependencies": {
 		"@axe-core/playwright": "4.14.0",

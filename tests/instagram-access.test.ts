@@ -115,8 +115,24 @@ it("reports an empty account without inventing a carousel or oldest post", async
 	);
 	expect(result).toEqual({
 		count: 0,
+		types: {},
 		newest: undefined,
 		oldest: undefined,
 		carousel: undefined,
 	});
+});
+
+it("retries a rate-limited request after the indicated delay", async () => {
+	let attempts = 0;
+	const result = await inspectInstagram("123", "token", async () => {
+		attempts++;
+		return attempts === 1
+			? new Response("limited", {
+					status: 429,
+					headers: { "retry-after": "0" },
+				})
+			: Response.json({ data: [] });
+	});
+	expect(result.count).toBe(0);
+	expect(attempts).toBe(2);
 });

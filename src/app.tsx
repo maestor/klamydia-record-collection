@@ -3,15 +3,20 @@ import { Hono } from "hono";
 import type { FC, PropsWithChildren } from "hono/jsx";
 
 const Layout: FC<
-	PropsWithChildren<{ title: string; canonical?: string; description?: string }>
-> = ({ title, canonical, description, children }) => (
+	PropsWithChildren<{
+		title: string;
+		canonical?: string;
+		description?: string;
+		demo: boolean;
+	}>
+> = ({ title, canonical, description, demo, children }) => (
 	<html lang="fi">
 		<head>
 			<meta charSet="utf-8" />
 			<meta name="viewport" content="width=device-width, initial-scale=1" />
 			<meta
 				name="description"
-				content={description || "Klamydiakokoelman esimerkkijulkaisuja."}
+				content={description || "Klamydiakokoelman julkaisuja."}
 			/>
 			<title>{title} | Klamydiakokoelma</title>
 			{canonical && <link rel="canonical" href={canonical} />}
@@ -23,7 +28,12 @@ const Layout: FC<
 				<nav aria-label="Päävalikko">
 					<a href="/archive">Arkisto</a>
 				</nav>
-				<p>Esimerkkisisältöä – ei oikeita julkaisutietoja</p>
+				{demo && (
+					<p>
+						Arkisto sisältää esimerkkisisältöä, joka ei kuvaa oikeita
+						julkaisuja.
+					</p>
+				)}
 			</header>
 			<main>{children}</main>
 		</body>
@@ -53,7 +63,20 @@ const PostList: FC<{ posts: Row[]; page?: number }> = ({ posts, page }) =>
 		<p>Julkaisuja ei vielä ole.</p>
 	);
 export function createApp(db: Client, siteUrl = "http://localhost:3000") {
-	const app = new Hono();
+	const app = new Hono<{ Variables: { demo: boolean } }>();
+	app.use("*", async (c, next) => {
+		if (
+			!c.req.path.startsWith("/assets/") &&
+			!c.req.path.startsWith("/media/") &&
+			c.req.path !== "/sitemap.xml"
+		) {
+			const result = await db.execute(
+				"SELECT EXISTS(SELECT 1 FROM posts LEFT JOIN instagram_posts ON instagram_posts.post_slug = posts.slug WHERE instagram_posts.media_id IS NULL) AS present",
+			);
+			c.set("demo", Boolean(result.rows[0].present));
+		}
+		await next();
+	});
 	app.use("*", async (c, next) => {
 		await next();
 		c.header(
@@ -76,11 +99,9 @@ export function createApp(db: Client, siteUrl = "http://localhost:3000") {
 			"SELECT slug, title, published_at FROM posts ORDER BY published_at DESC, slug DESC LIMIT 6",
 		);
 		return c.html(
-			<Layout title="Etusivu" canonical={`${siteUrl}/`}>
+			<Layout title="Etusivu" canonical={`${siteUrl}/`} demo={c.get("demo")}>
 				<h1>Klamydiakokoelma</h1>
-				<p>
-					Tutustu kokoelman esimerkkijulkaisuihin. Sisältö on kuvitteellista.
-				</p>
+				<p>Tutustu kokoelman julkaisuihin.</p>
 				<h2>Uusimmat julkaisut</h2>
 				<PostList posts={posts.rows} />
 			</Layout>,
@@ -90,7 +111,7 @@ export function createApp(db: Client, siteUrl = "http://localhost:3000") {
 		const raw = c.req.query("page");
 		if (raw !== undefined && !/^[1-9]\d{0,5}$/.test(raw))
 			return c.html(
-				<Layout title="Virheellinen sivu">
+				<Layout title="Virheellinen sivu" demo={c.get("demo")}>
 					<h1>Virheellinen sivunumero</h1>
 					<a href="/archive">Siirry arkistoon</a>
 				</Layout>,
@@ -104,6 +125,7 @@ export function createApp(db: Client, siteUrl = "http://localhost:3000") {
 		return c.html(
 			<Layout
 				title="Arkisto"
+				demo={c.get("demo")}
 				canonical={`${siteUrl}/archive${page > 1 ? `?page=${page}` : ""}`}
 			>
 				<h1>Arkisto</h1>
@@ -147,19 +169,20 @@ export function createApp(db: Client, siteUrl = "http://localhost:3000") {
 		const post = result.rows[0];
 		if (!post)
 			return c.html(
-				<Layout title="Ei löytynyt">
+				<Layout title="Ei löytynyt" demo={c.get("demo")}>
 					<h1>Julkaisua ei löytynyt</h1>
 					<a href="/archive">Siirry arkistoon</a>
 				</Layout>,
 				404,
 			);
 		const images = await db.execute({
-			sql: "SELECT url, alt FROM images WHERE post_slug = ? ORDER BY position",
+			sql: "SELECT images.url, images.alt, instagram_images.preview_url FROM images LEFT JOIN instagram_images ON instagram_images.post_slug = images.post_slug AND instagram_images.position = images.position WHERE images.post_slug = ? ORDER BY images.position",
 			args: [c.req.param("slug")],
 		});
 		return c.html(
 			<Layout
 				title={String(post.title)}
+				demo={c.get("demo")}
 				canonical={`${siteUrl}/posts/${encodeURIComponent(String(post.slug))}`}
 				description={String(post.description).slice(0, 160)}
 			>
@@ -178,7 +201,13 @@ export function createApp(db: Client, siteUrl = "http://localhost:3000") {
 							.map((image) => (
 								<a href={String(image.url)}>
 									<img
-										src={String(image.url)}
+										src={
+											/^\/media\/[a-zA-Z0-9._-]+$/.test(
+												String(image.preview_url),
+											)
+												? String(image.preview_url)
+												: String(image.url)
+										}
 										alt={String(image.alt)}
 										width="640"
 										height="640"

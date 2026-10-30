@@ -1,8 +1,21 @@
-import { copyFile, mkdir, readFile } from "node:fs/promises";
+import { copyFile, mkdir, readFile, realpath } from "node:fs/promises";
+import { resolve } from "node:path";
 import { createClient } from "@libsql/client";
 import { environment } from "../src/env.js";
 
 const { databaseUrl } = environment(process.env);
+if (!process.env.DATABASE_URL)
+	throw new Error(
+		"Set DATABASE_URL explicitly to a separate demo database before seeding.",
+	);
+const target = resolve(databaseUrl.slice(5));
+const collection = resolve(".data/collection.db");
+const targetReal = await realpath(target).catch(() => target);
+const collectionReal = await realpath(collection).catch(() => collection);
+if (targetReal === collectionReal)
+	throw new Error(
+		"Use a separate demo database; the collection database cannot be seeded.",
+	);
 const fixtures = JSON.parse(await readFile("fixtures/demo.json", "utf8")) as {
 	slug: string;
 	title: string;

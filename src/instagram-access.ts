@@ -1,4 +1,6 @@
-type Media = {
+import { fetchWithRetry } from "./instagram-fetch.js";
+
+export type Media = {
 	id: string;
 	timestamp: string;
 	media_type: string;
@@ -6,9 +8,9 @@ type Media = {
 	permalink?: string;
 	media_url?: string;
 };
-type Child = { id: string; media_type: string; media_url?: string };
+export type Child = { id: string; media_type: string; media_url?: string };
 
-export async function inspectInstagram(
+export function instagramReader(
 	accountId: string,
 	token: string,
 	fetcher: typeof fetch = fetch,
@@ -28,10 +30,8 @@ export async function inspectInstagram(
 			if (after) url.searchParams.set("after", after);
 			let response: Response;
 			try {
-				response = await fetcher(url, {
+				response = await fetchWithRetry(fetcher, url, {
 					headers: { Authorization: `Bearer ${token}` },
-					signal: AbortSignal.timeout(15000),
-					redirect: "error",
 				});
 			} catch {
 				throw new Error(
@@ -65,37 +65,64 @@ export async function inspectInstagram(
 		}
 		throw new Error("Stopped after 100 pages; history coverage is incomplete.");
 	}
-	const media = await pages<Media>(
-		`${accountId}/media`,
-		"id,caption,timestamp,media_type,media_url,permalink",
-	);
-	if (
-		media.some(
-			(item) =>
-				!item ||
-				!/^\d+$/.test(item.id) ||
-				typeof item.timestamp !== "string" ||
-				!Number.isFinite(Date.parse(item.timestamp)) ||
-				typeof item.media_type !== "string",
+	async function getMedia() {
+		const media = await pages<Media>(
+			`${accountId}/media`,
+			"id,caption,timestamp,media_type,media_url,permalink",
+		);
+		if (
+			media.some(
+				(item) =>
+					!item ||
+					!/^\d+$/.test(item.id) ||
+					typeof item.timestamp !== "string" ||
+					!Number.isFinite(Date.parse(item.timestamp)) ||
+					typeof item.media_type !== "string",
+			)
 		)
-	)
-		throw new Error("Instagram returned invalid media metadata.");
+			throw new Error("Instagram returned invalid media metadata.");
+		return media;
+	}
+	async function getChildren(id: string) {
+		if (!/^\d+$/.test(id)) throw new Error("Invalid Instagram media ID.");
+		const children = await pages<Child>(
+			`${id}/children`,
+			"id,media_type,media_url",
+		);
+		if (
+			children.some(
+				(item) =>
+					!item ||
+					!/^\d+$/.test(item.id) ||
+					typeof item.media_type !== "string",
+			)
+		)
+			throw new Error("Instagram returned invalid carousel metadata.");
+		return children;
+	}
+	return { getMedia, getChildren };
+}
+
+export async function inspectInstagram(
+	accountId: string,
+	token: string,
+	fetcher: typeof fetch = fetch,
+) {
+	const reader = instagramReader(accountId, token, fetcher);
+	const media = await reader.getMedia();
 	const sorted = [...media].sort(
 		(a, b) => Date.parse(b.timestamp) - Date.parse(a.timestamp),
 	);
 	const carousel = sorted.find((item) => item.media_type === "CAROUSEL_ALBUM");
-	const children = carousel
-		? await pages<Child>(`${carousel.id}/children`, "id,media_type,media_url")
-		: [];
-	if (
-		children.some(
-			(item) =>
-				!item || !/^\d+$/.test(item.id) || typeof item.media_type !== "string",
-		)
-	)
-		throw new Error("Instagram returned invalid carousel metadata.");
+	const children = carousel ? await reader.getChildren(carousel.id) : [];
 	return {
 		count: media.length,
+		types: Object.fromEntries(
+			[...new Set(media.map((item) => item.media_type))].map((type) => [
+				type,
+				media.filter((item) => item.media_type === type).length,
+			]),
+		),
 		newest: sorted[0],
 		oldest: sorted.at(-1),
 		carousel: carousel ? { ...carousel, children } : undefined,

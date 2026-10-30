@@ -20,6 +20,7 @@ try {
 		JSON.stringify(
 			{
 				accessiblePosts: result.count,
+				types: result.types,
 				newest: result.newest && summarizePost(result.newest),
 				oldest: result.oldest && summarizePost(result.oldest),
 				carousel: result.carousel && {
