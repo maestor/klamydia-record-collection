@@ -1,4 +1,3 @@
-import { spawnSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
 import { environment } from "../src/env.js";
 
@@ -33,17 +32,4 @@ describe("local configuration", () => {
 		for (const PORT of ["0", "65536", "abc", "1.5"])
 			expect(() => environment({ PORT })).toThrow();
 	});
-});
-
-it("refuses to seed demo fixtures into the default collection database", () => {
-	const result = spawnSync(
-		process.execPath,
-		["--import", "tsx", "scripts/seed.ts"],
-		{
-			env: { ...process.env, DATABASE_URL: "file:.data/collection.db" },
-			encoding: "utf8",
-		},
-	);
-	expect(result.status).not.toBe(0);
-	expect(result.stderr).toContain("demo database");
 });

@@ -1,6 +1,4 @@
-import { createHash, randomUUID } from "node:crypto";
-import { link, mkdir, readFile, unlink, writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import { createHash } from "node:crypto";
 import type { Client, InStatement } from "@libsql/client";
 import sharp from "sharp";
 import { instagramReader } from "./instagram-access.js";
@@ -8,7 +6,6 @@ import { fetchWithRetry } from "./instagram-fetch.js";
 
 type Options = {
 	db: Client;
-	mediaDir: string;
 	accountId: string;
 	token: string;
 	fetcher?: typeof fetch;
@@ -20,7 +17,6 @@ type Options = {
 
 export async function importInstagram({
 	db,
-	mediaDir,
 	accountId,
 	token,
 	fetcher = fetch,
@@ -29,6 +25,8 @@ export async function importInstagram({
 	dryRun = false,
 	putImage,
 }: Options) {
+	if (!dryRun && !putImage)
+		throw new Error("A media store is required for imports.");
 	if (
 		limit !== undefined &&
 		(!Number.isInteger(limit) || limit < 1 || limit > 1000)
@@ -173,26 +171,6 @@ export async function importInstagram({
 			async function storeImage(bytes: Buffer) {
 				const filename = `${createHash("sha256").update(bytes).digest("hex")}.jpg`;
 				if (!dryRun && putImage) await putImage(filename, bytes);
-				else if (!dryRun) {
-					await mkdir(mediaDir, { recursive: true });
-					const temp = join(mediaDir, `.staging-${randomUUID()}`);
-					await writeFile(temp, bytes, { flag: "wx" });
-					try {
-						try {
-							await link(temp, join(mediaDir, filename));
-						} catch (error) {
-							if ((error as NodeJS.ErrnoException).code !== "EEXIST")
-								throw error;
-							const present = await readFile(join(mediaDir, filename));
-							if (!present.equals(bytes))
-								throw new Error(
-									`Existing image failed integrity check for post ${post.id}.`,
-								);
-						}
-					} finally {
-						await unlink(temp);
-					}
-				}
 				return { filename, url: `/media/${filename}` };
 			}
 			const original = await storeImage(image);

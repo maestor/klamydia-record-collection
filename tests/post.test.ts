@@ -1,8 +1,8 @@
 import { createClient } from "@libsql/client";
 import { within } from "@testing-library/dom";
 import { describe, expect, it } from "vitest";
-import { createApp } from "../src/app.js";
 import { migrate } from "../src/db.js";
+import { createTestApp as createApp } from "./helpers.js";
 
 describe("post page", () => {
 	it("lets a visitor read the complete description and identify images in order", async () => {
@@ -22,11 +22,11 @@ describe("post page", () => {
 			args: [
 				"esimerkki",
 				1,
-				"/media/one.svg",
+				`/media/${"a".repeat(64)}.jpg`,
 				"Ensimmäinen kuva",
 				"esimerkki",
 				2,
-				"/media/two.svg",
+				`/media/${"b".repeat(64)}.jpg`,
 				"Toinen kuva",
 			],
 		});

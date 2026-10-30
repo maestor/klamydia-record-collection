@@ -26,7 +26,7 @@ try {
 	try {
 		const result = await restoreCollectionMedia(
 			db,
-			".data/media",
+			".data/restored-media",
 			async (filename) => {
 				try {
 					let bytes: Buffer | undefined;

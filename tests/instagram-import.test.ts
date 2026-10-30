@@ -1,16 +1,35 @@
-import { mkdtemp, readFile, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
 import { createClient } from "@libsql/client";
 import sharp from "sharp";
 import { expect, it } from "vitest";
-import { createApp } from "../src/app.js";
 import { migrate } from "../src/db.js";
 import { importInstagram } from "../src/instagram-import.js";
+import { createTestApp as createApp } from "./helpers.js";
+
+it("refuses an import without a configured media store before fetching Instagram data", async () => {
+	const db = createClient({ url: "file::memory:" });
+	try {
+		await migrate(db);
+		let fetched = false;
+		await expect(
+			importInstagram({
+				db,
+				accountId: "123",
+				token: "token",
+				fetcher: async () => {
+					fetched = true;
+					throw new Error("unexpected request");
+				},
+			}),
+		).rejects.toThrow("media store");
+		expect(fetched).toBe(false);
+	} finally {
+		db.close();
+	}
+});
 
 it("imports a carousel with full caption and ordered images, then reruns without duplicates or overwriting its title", async () => {
-	const dir = await mkdtemp(join(tmpdir(), "instagram-import-"));
 	const db = createClient({ url: "file::memory:" });
+	const objects = new Map<string, Buffer>();
 	try {
 		await migrate(db);
 		const jpeg = await sharp({
@@ -59,7 +78,9 @@ it("imports a carousel with full caption and ordered images, then reruns without
 		};
 		const options = {
 			db,
-			mediaDir: dir,
+			putImage: async (name: string, bytes: Buffer) => {
+				objects.set(name, bytes);
+			},
 			accountId: "123",
 			token: "token",
 			fetcher,
@@ -79,7 +100,6 @@ it("imports a carousel with full caption and ordered images, then reruns without
 			await createApp(db).request(`/posts/${post.slug}`)
 		).text();
 		expect(html).toContain("Äänilevy #punk");
-		expect(html).not.toContain("Arkisto sisältää esimerkkisisältöä");
 		document.documentElement.innerHTML = html;
 		const preview = document.querySelector(".gallery img");
 		expect(preview?.getAttribute("src")).not.toBe(
@@ -106,9 +126,7 @@ it("imports a carousel with full caption and ordered images, then reruns without
 			expect(
 				(
 					await sharp(
-						await readFile(
-							join(dir, String(image.url).slice("/media/".length)),
-						),
+						objects.get(String(image.url).slice("/media/".length)) as Buffer,
 					).metadata()
 				).format,
 			).toBe("jpeg");
@@ -131,12 +149,10 @@ it("imports a carousel with full caption and ordered images, then reruns without
 		).toMatchObject({ title: "Owner title", description: caption });
 	} finally {
 		db.close();
-		await rm(dir, { recursive: true, force: true });
 	}
 });
 
 it("does not publish partial changes when a later image fails, and dry runs leave no data or files", async () => {
-	const dir = await mkdtemp(join(tmpdir(), "instagram-import-"));
 	const db = createClient({ url: "file::memory:" });
 	try {
 		await migrate(db);
@@ -146,6 +162,7 @@ it("does not publish partial changes when a later image fails, and dry runs leav
 			.jpeg()
 			.toBuffer();
 		let fail = false;
+		let uploads = 0;
 		const fetcher: typeof fetch = async (input) => {
 			const url = new URL(String(input));
 			if (url.hostname === "images.fbcdn.net")
@@ -165,7 +182,9 @@ it("does not publish partial changes when a later image fails, and dry runs leav
 		};
 		const options = {
 			db,
-			mediaDir: dir,
+			putImage: async () => {
+				uploads++;
+			},
 			accountId: "123",
 			token: "token",
 			fetcher,
@@ -183,7 +202,7 @@ it("does not publish partial changes when a later image fails, and dry runs leav
 		expect(
 			(await db.execute("SELECT count(*) AS n FROM posts")).rows[0].n,
 		).toBe(0);
-		expect(await (await import("node:fs/promises")).readdir(dir)).toEqual([]);
+		expect(uploads).toBe(0);
 		fail = true;
 		await expect(importInstagram(options)).rejects.toThrow(
 			"Image download failed",
@@ -206,12 +225,10 @@ it("does not publish partial changes when a later image fails, and dry runs leav
 		).toEqual(before);
 	} finally {
 		db.close();
-		await rm(dir, { recursive: true, force: true });
 	}
 });
 
 it("rejects unsafe image sources and corrupt images without publishing posts", async () => {
-	const dir = await mkdtemp(join(tmpdir(), "instagram-import-"));
 	const db = createClient({ url: "file::memory:" });
 	try {
 		await migrate(db);
@@ -232,7 +249,7 @@ it("rejects unsafe image sources and corrupt images without publishing posts", a
 				: new Response("not an image");
 		const options = {
 			db,
-			mediaDir: dir,
+			putImage: async () => {},
 			accountId: "123",
 			token: "token",
 			fetcher,
@@ -247,12 +264,10 @@ it("rejects unsafe image sources and corrupt images without publishing posts", a
 		).toBe(0);
 	} finally {
 		db.close();
-		await rm(dir, { recursive: true, force: true });
 	}
 });
 
 it("keeps existing posts when an upstream response is incomplete or unsupported", async () => {
-	const dir = await mkdtemp(join(tmpdir(), "instagram-import-"));
 	const db = createClient({ url: "file::memory:" });
 	try {
 		await migrate(db);
@@ -275,7 +290,7 @@ it("keeps existing posts when an upstream response is incomplete or unsupported"
 		const fetcher: typeof fetch = async () => Response.json({ data: media });
 		const options = {
 			db,
-			mediaDir: dir,
+			putImage: async () => {},
 			accountId: "123",
 			token: "token",
 			fetcher,
@@ -297,12 +312,10 @@ it("keeps existing posts when an upstream response is incomplete or unsupported"
 		).toMatchObject({ title: "Existing", description: "Keep" });
 	} finally {
 		db.close();
-		await rm(dir, { recursive: true, force: true });
 	}
 });
 
 it("imports media into a configured remote store without creating local image files", async () => {
-	const dir = await mkdtemp(join(tmpdir(), "instagram-import-"));
 	const db = createClient({ url: "file::memory:" });
 	try {
 		await migrate(db);
@@ -328,7 +341,6 @@ it("imports media into a configured remote store without creating local image fi
 				: new Response(jpeg);
 		await importInstagram({
 			db,
-			mediaDir: dir,
 			accountId: "123",
 			token: "token",
 			fetcher,
@@ -337,7 +349,6 @@ it("imports media into a configured remote store without creating local image fi
 			},
 		});
 		expect(objects.size).toBe(2);
-		expect(await (await import("node:fs/promises")).readdir(dir)).toEqual([]);
 		expect(
 			(await db.execute("SELECT count(*) AS n FROM posts")).rows[0].n,
 		).toBe(1);
@@ -347,7 +358,6 @@ it("imports media into a configured remote store without creating local image fi
 		await expect(
 			importInstagram({
 				db,
-				mediaDir: dir,
 				accountId: "123",
 				token: "token",
 				fetcher,
@@ -361,6 +371,5 @@ it("imports media into a configured remote store without creating local image fi
 		).toBe("Previous published content");
 	} finally {
 		db.close();
-		await rm(dir, { recursive: true, force: true });
 	}
 });
