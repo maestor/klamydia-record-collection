@@ -11,4 +11,4 @@ npm run seed:demo
 npm run dev
 ```
 
-Open http://localhost:3000/. No credentials are required. `npm run dev` loads an optional `.env` file (see [.env.example](.env.example)); existing environment variables take precedence. See [development and security](docs/development.md) for commands, data boundaries and verification.
+Open http://localhost:3000/. No credentials are required. `npm run dev` loads an optional `.env` file (see [.env.example](.env.example)); existing environment variables take precedence. See [development and security](docs/development.md) for commands, data boundaries and verification, and [Instagram access](docs/instagram-access.md) for the preliminary read-only check.
