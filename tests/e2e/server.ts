@@ -35,6 +35,25 @@ for (const post of fixtures) {
 			sql: "INSERT INTO images VALUES (?,?,?,?)",
 			args: [post.slug, index + 1, `/media/${filename}`, image.alt],
 		});
+		if (post.slug === "esimerkki") {
+			const shape = index === 0 ? "portrait" : "landscape";
+			const preview = `${createHash("sha256").update(`${image.url}-preview`).digest("hex")}.jpg`;
+			images.set(filename, `tests/fixtures/media/gallery-${shape}.svg`);
+			images.set(preview, `tests/fixtures/media/gallery-${shape}-preview.svg`);
+			await db.execute({
+				sql: "INSERT INTO instagram_images VALUES (?,?,?,?,?,?,?,?)",
+				args: [
+					post.slug,
+					index + 1,
+					`fixture-${index}`,
+					index === 0 ? 800 : 1200,
+					index === 0 ? 1200 : 800,
+					"jpeg",
+					filename.slice(0, -4),
+					`/media/${preview}`,
+				],
+			});
+		}
 	}
 }
 await db.execute({

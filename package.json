@@ -19,6 +19,7 @@
 		"test:coverage": "vitest run --coverage",
 		"test:e2e": "playwright test",
 		"build": "tsc -p tsconfig.build.json",
+		"build:gallery": "node --import tsx scripts/build-gallery.ts",
 		"start": "node dist/server.js",
 		"verify": "npm run typecheck && npm run lint && npm run test:coverage && npm run build && npm run test:e2e"
 	},
