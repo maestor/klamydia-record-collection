@@ -1,6 +1,15 @@
-import type { Client, Row } from "@libsql/client";
+import type { Client } from "@libsql/client";
 import { Hono } from "hono";
 import type { FC, PropsWithChildren } from "hono/jsx";
+import { formatDate, locale, messages as m } from "./i18n/fi.js";
+import { presentDescription } from "./presentation/description.js";
+import {
+	getImages,
+	getPost,
+	getTags,
+	listPosts,
+	type PostSummary,
+} from "./repositories/posts.js";
 
 const Layout: FC<
 	PropsWithChildren<{
@@ -9,30 +18,30 @@ const Layout: FC<
 		description?: string;
 	}>
 > = ({ title, canonical, description, children }) => (
-	<html lang="fi">
+	<html lang={locale.language}>
 		<head>
 			<meta charSet="utf-8" />
 			<meta name="viewport" content="width=device-width, initial-scale=1" />
-			<meta
-				name="description"
-				content={description || "Klamydiakokoelman julkaisuja."}
-			/>
+			<meta name="description" content={description || m.defaultDescription} />
 			<title>{title} | Klamydiakokoelma</title>
 			{canonical && <link rel="canonical" href={canonical} />}
-			<link rel="stylesheet" href="/assets/style-2e48a2f1.css" />
+			<link rel="stylesheet" href="/assets/style-a5137ec5.css" />
 		</head>
 		<body>
 			<header>
 				<a href="/">Klamydiakokoelma</a>
-				<nav aria-label="Päävalikko">
-					<a href="/archive">Arkisto</a>
+				<nav aria-label={m.navigation}>
+					<a href="/archive">{m.archive}</a>
 				</nav>
 			</header>
 			<main>{children}</main>
 		</body>
 	</html>
 );
-const PostList: FC<{ posts: Row[]; page?: number }> = ({ posts, page }) =>
+const PostList: FC<{ posts: PostSummary[]; page?: number }> = ({
+	posts,
+	page,
+}) =>
 	posts.length ? (
 		<ul class="post-list">
 			{posts.map((post) => (
@@ -46,14 +55,14 @@ const PostList: FC<{ posts: Row[]; page?: number }> = ({ posts, page }) =>
 							</a>
 						</h2>
 						<time dateTime={String(post.published_at)}>
-							{String(post.published_at)}
+							{formatDate(String(post.published_at))}
 						</time>
 					</article>
 				</li>
 			))}
 		</ul>
 	) : (
-		<p>Julkaisuja ei vielä ole.</p>
+		<p>{m.empty}</p>
 	);
 export function createApp(
 	db: Client,
@@ -94,15 +103,13 @@ export function createApp(
 		}
 	});
 	app.get("/", async (c) => {
-		const posts = await db.execute(
-			"SELECT slug, title, published_at FROM posts ORDER BY published_at DESC, slug DESC LIMIT 6",
-		);
+		const posts = await listPosts(db, 6);
 		return c.html(
-			<Layout title="Etusivu" canonical={`${siteUrl}/`}>
+			<Layout title={m.home} canonical={`${siteUrl}/`}>
 				<h1>Klamydiakokoelma</h1>
-				<p>Tutustu kokoelman julkaisuihin.</p>
-				<h2>Uusimmat julkaisut</h2>
-				<PostList posts={posts.rows} />
+				<p>{m.intro}</p>
+				<h2>{m.latest}</h2>
+				<PostList posts={posts} />
 			</Layout>,
 		);
 	});
@@ -110,33 +117,30 @@ export function createApp(
 		const raw = c.req.query("page");
 		if (raw !== undefined && !/^[1-9]\d{0,5}$/.test(raw))
 			return c.html(
-				<Layout title="Virheellinen sivu">
-					<h1>Virheellinen sivunumero</h1>
-					<a href="/archive">Siirry arkistoon</a>
+				<Layout title={m.invalidTitle}>
+					<h1>{m.invalidPage}</h1>
+					<a href="/archive">{m.goArchive}</a>
 				</Layout>,
 				400,
 			);
 		const page = raw ? Number(raw) : 1;
-		const posts = await db.execute({
-			sql: "SELECT slug, title, published_at FROM posts ORDER BY published_at DESC, slug DESC LIMIT 13 OFFSET ?",
-			args: [(page - 1) * 12],
-		});
+		const posts = await listPosts(db, 13, (page - 1) * 12);
 		return c.html(
 			<Layout
-				title="Arkisto"
+				title={m.archive}
 				canonical={`${siteUrl}/archive${page > 1 ? `?page=${page}` : ""}`}
 			>
-				<h1>Arkisto</h1>
-				<PostList posts={posts.rows.slice(0, 12)} page={page} />
-				<nav aria-label="Arkiston sivut">
+				<h1>{m.archive}</h1>
+				<PostList posts={posts.slice(0, 12)} page={page} />
+				<nav aria-label={m.archivePages}>
 					{page > 1 && (
 						<a href={page === 2 ? "/archive" : `/archive?page=${page - 1}`}>
-							Uudemmat
+							{m.newer}
 						</a>
 					)}
-					<span>Sivu {page}</span>
-					{posts.rows.length > 12 && (
-						<a href={`/archive?page=${page + 1}`}>Vanhemmat</a>
+					<span>{m.page(page)}</span>
+					{posts.length > 12 && (
+						<a href={`/archive?page=${page + 1}`}>{m.older}</a>
 					)}
 				</nav>
 			</Layout>,
@@ -160,38 +164,74 @@ export function createApp(
 		);
 	});
 	app.get("/posts/:slug", async (c) => {
-		const result = await db.execute({
-			sql: "SELECT slug, title, published_at, description FROM posts WHERE slug = ?",
-			args: [c.req.param("slug")],
-		});
-		const post = result.rows[0];
+		const post = await getPost(db, c.req.param("slug"));
 		if (!post)
 			return c.html(
-				<Layout title="Ei löytynyt">
-					<h1>Julkaisua ei löytynyt</h1>
-					<a href="/archive">Siirry arkistoon</a>
+				<Layout title={m.notFound}>
+					<h1>{m.postNotFound}</h1>
+					<a href="/archive">{m.goArchive}</a>
 				</Layout>,
 				404,
 			);
-		const images = await db.execute({
-			sql: "SELECT images.url, images.alt, instagram_images.preview_url FROM images LEFT JOIN instagram_images ON instagram_images.post_slug = images.post_slug AND instagram_images.position = images.position WHERE images.post_slug = ? ORDER BY images.position",
-			args: [c.req.param("slug")],
-		});
+		const [images, tags] = await Promise.all([
+			getImages(db, c.req.param("slug")),
+			getTags(db, c.req.param("slug")),
+		]);
+		const reading = presentDescription(
+			String(post.title),
+			String(post.description),
+		);
+		const permalink = String(post.permalink ?? "");
 		return c.html(
 			<Layout
 				title={String(post.title)}
 				canonical={`${siteUrl}/posts/${encodeURIComponent(String(post.slug))}`}
-				description={String(post.description).slice(0, 160)}
+				description={reading.text.slice(0, 160)}
 			>
 				<article>
 					<h1>{String(post.title)}</h1>
 					<time dateTime={String(post.published_at)}>
-						{String(post.published_at)}
+						{formatDate(String(post.published_at))}
 					</time>
-					<p class="description">{String(post.description)}</p>
-					<h2>Kuvat</h2>
+					<p class="description">{reading.text}</p>
+					{tags.length > 0 && (
+						<ul class="tags" aria-label={m.tags}>
+							{tags.map((tag) => (
+								<li>{String(tag.display)}</li>
+							))}
+						</ul>
+					)}
+					{/^https:\/\/www\.instagram\.com\/p\/[A-Za-z0-9_-]+\/?$/.test(
+						permalink,
+					) && (
+						<p>
+							<a class="source-link" href={permalink}>
+								<svg
+									aria-hidden="true"
+									viewBox="0 0 24 24"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="2"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+								>
+									<rect x="3" y="3" width="18" height="18" rx="5" />
+									<circle cx="12" cy="12" r="4" />
+									<circle
+										cx="17.5"
+										cy="6.5"
+										r=".7"
+										fill="currentColor"
+										stroke="none"
+									/>
+								</svg>
+								{m.source}
+							</a>
+						</p>
+					)}
+					<h2>{m.images}</h2>
 					<div class="gallery">
-						{images.rows
+						{images
 							.filter((image) =>
 								/^\/media\/[a-f0-9]{64}\.jpg$/.test(String(image.url)),
 							)
@@ -222,7 +262,7 @@ export function createApp(
 									: "/archive"
 							}
 						>
-							Takaisin arkistoon
+							{m.backArchive}
 						</a>
 					</p>
 				</article>

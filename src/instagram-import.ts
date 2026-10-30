@@ -89,6 +89,10 @@ export async function importInstagram({
 			throw new Error(
 				`Post ${post.id} has missing or unsupported media; no posts were published.`,
 			);
+		if (new Set(children.map((child) => child.id)).size !== children.length)
+			throw new Error(
+				`Post ${post.id} has duplicate children; no posts were published.`,
+			);
 		const images: {
 			url: string;
 			preview: string;
@@ -259,6 +263,15 @@ export async function importInstagram({
 				new Date().toISOString(),
 			],
 		});
+		// Save owner-edited descriptions against stable media IDs before positions change.
+		statements.push({
+			sql: `INSERT INTO image_editorial (media_id, alt)
+				SELECT ii.media_id, i.alt FROM images i JOIN instagram_images ii
+				ON ii.post_slug = i.post_slug AND ii.position = i.position
+				WHERE i.post_slug = ? AND i.alt != 'Julkaisun kuva ' || i.position
+				ON CONFLICT(media_id) DO UPDATE SET alt = excluded.alt`,
+			args: [slug],
+		});
 		statements.push({
 			sql: "DELETE FROM images WHERE post_slug = ?",
 			args: [slug],
@@ -269,8 +282,14 @@ export async function importInstagram({
 		});
 		images.forEach((image, index) => {
 			statements.push({
-				sql: "INSERT INTO images (post_slug, position, url, alt) VALUES (?,?,?,?)",
-				args: [slug, index + 1, image.url, `Julkaisun kuva ${index + 1}`],
+				sql: "INSERT INTO images (post_slug, position, url, alt) VALUES (?,?,?,COALESCE((SELECT alt FROM image_editorial WHERE media_id = ?), ?))",
+				args: [
+					slug,
+					index + 1,
+					image.url,
+					image.id,
+					`Julkaisun kuva ${index + 1}`,
+				],
 			});
 			statements.push({
 				sql: "INSERT INTO instagram_images (post_slug,position,media_id,width,height,format,content_hash,preview_url) VALUES (?,?,?,?,?,?,?,?)",

@@ -10,4 +10,7 @@ export async function migrate(db: Client) {
 	await db.executeMultiple(
 		await readFile("migrations/003_instagram_details.sql", "utf8"),
 	);
+	await db.executeMultiple(
+		await readFile("migrations/004_image_editorial.sql", "utf8"),
+	);
 }

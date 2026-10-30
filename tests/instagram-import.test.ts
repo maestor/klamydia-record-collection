@@ -43,6 +43,8 @@ it("imports a carousel with full caption and ordered images, then reruns without
 			.jpeg()
 			.toBuffer();
 		let caption = "Koko kuvaus\n\nÄänilevy #punk";
+		let reverse = false;
+		let duplicate = false;
 		const fetcher: typeof fetch = async (input) => {
 			const url = new URL(String(input));
 			if (url.hostname === "images.fbcdn.net")
@@ -51,18 +53,13 @@ it("imports a carousel with full caption and ordered images, then reruns without
 				});
 			if (url.pathname.endsWith("/children"))
 				return Response.json({
-					data: [
-						{
-							id: "11",
+					data: (reverse ? [12, 11] : duplicate ? [11, 11] : [11, 12]).map(
+						(id) => ({
+							id: String(id),
 							media_type: "IMAGE",
-							media_url: "https://images.fbcdn.net/one",
-						},
-						{
-							id: "12",
-							media_type: "IMAGE",
-							media_url: "https://images.fbcdn.net/two",
-						},
-					],
+							media_url: `https://images.fbcdn.net/${id === 11 ? "one" : "two"}`,
+						}),
+					),
 				});
 			return Response.json({
 				data: [
@@ -99,7 +96,7 @@ it("imports a carousel with full caption and ordered images, then reruns without
 		const html = await (
 			await createApp(db).request(`/posts/${post.slug}`)
 		).text();
-		expect(html).toContain("Äänilevy #punk");
+		expect(html).toContain("Äänilevy punk");
 		document.documentElement.innerHTML = html;
 		const preview = document.querySelector(".gallery img");
 		expect(preview?.getAttribute("src")).not.toBe(
@@ -142,11 +139,39 @@ it("imports a carousel with full caption and ordered images, then reruns without
 		expect(
 			(await db.execute("SELECT count(*) AS n FROM images")).rows[0].n,
 		).toBe(2);
+		await db.execute(
+			"UPDATE images SET alt = 'Omistajan kuvaus' WHERE position = 1",
+		);
+		reverse = true;
 		caption = "Päivitetty teksti";
 		expect(await importInstagram(options)).toMatchObject({ updated: 1 });
 		expect(
 			(await db.execute("SELECT title, description FROM posts")).rows[0],
 		).toMatchObject({ title: "Owner title", description: caption });
+		expect(
+			(await db.execute("SELECT alt FROM images WHERE position = 2")).rows[0]
+				.alt,
+		).toBe("Omistajan kuvaus");
+		await db.execute(
+			"CREATE TRIGGER fail_update BEFORE INSERT ON instagram_images BEGIN SELECT RAISE(ABORT, 'database failure'); END",
+		);
+		caption = "Uusi teksti";
+		await expect(importInstagram(options)).rejects.toThrow();
+		expect(
+			(await db.execute("SELECT description FROM posts")).rows[0].description,
+		).toBe("Päivitetty teksti");
+		expect(
+			(await db.execute("SELECT alt FROM images WHERE position = 2")).rows[0]
+				.alt,
+		).toBe("Omistajan kuvaus");
+		await db.execute("DROP TRIGGER fail_update");
+		duplicate = true;
+		reverse = false;
+		await expect(importInstagram(options)).rejects.toThrow("duplicate");
+		expect(
+			(await db.execute("SELECT alt FROM images WHERE position = 2")).rows[0]
+				.alt,
+		).toBe("Omistajan kuvaus");
 	} finally {
 		db.close();
 	}

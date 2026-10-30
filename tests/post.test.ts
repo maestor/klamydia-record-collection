@@ -81,3 +81,59 @@ describe("public response protections", () => {
 		}
 	});
 });
+
+it("shows a cleaned reading view while preserving the source description", async () => {
+	const db = createClient({ url: "file::memory:" });
+	try {
+		await migrate(db);
+		const source = "Otsikko\n\nTeksti #punk.\n\n#punk #levy";
+		await db.execute({
+			sql: "INSERT INTO posts VALUES (?, ?, ?, ?)",
+			args: ["clean", "Otsikko", "2026-09-01T22:00:00Z", source],
+		});
+		await db.execute({
+			sql: "INSERT INTO instagram_posts VALUES (?, ?, ?, ?, ?, ?)",
+			args: [
+				"1",
+				"clean",
+				"https://www.instagram.com/p/test/",
+				"x",
+				"IMAGE",
+				"2026-01-01",
+			],
+		});
+		await db.execute("INSERT INTO tags VALUES ('punk', 'Punk')");
+		await db.execute("INSERT INTO post_tags VALUES ('clean', 'punk')");
+		const response = await createApp(db).request("/posts/clean");
+		document.documentElement.innerHTML = await response.text();
+		expect(document.querySelector(".description")?.textContent).toBe(
+			"Teksti punk.",
+		);
+		expect(document.querySelector("time")?.textContent).toBe("2.9.2026");
+		expect(within(document.body).getByText("Punk")).toBeTruthy();
+		expect(
+			within(document.body)
+				.getByRole("link", { name: "Alkuperäinen julkaisu" })
+				.getAttribute("href"),
+		).toBe("https://www.instagram.com/p/test/");
+		expect(document.querySelector("details")).toBeNull();
+		const tags = within(document.body).getByRole("list", {
+			name: "Tunnisteet",
+		});
+		expect(within(tags).queryByRole("link")).toBeNull();
+		expect(
+			within(document.body)
+				.getByRole("link", { name: "Alkuperäinen julkaisu" })
+				.querySelector("svg")
+				?.getAttribute("aria-hidden"),
+		).toBe("true");
+		expect(document.querySelector("time")?.getAttribute("datetime")).toBe(
+			"2026-09-01T22:00:00Z",
+		);
+		expect(
+			(await db.execute("SELECT description FROM posts")).rows[0].description,
+		).toBe(source);
+	} finally {
+		db.close();
+	}
+});
