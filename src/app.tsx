@@ -25,7 +25,8 @@ const Layout: FC<
 			<meta name="description" content={description || m.defaultDescription} />
 			<title>{title} | Klamydiakokoelma</title>
 			{canonical && <link rel="canonical" href={canonical} />}
-			<link rel="stylesheet" href="/assets/style-a5137ec5.css" />
+			<link rel="stylesheet" href="/assets/style-84cf826c.css" />
+			<script src="/assets/images-cc5a7637.js" defer></script>
 		</head>
 		<body>
 			<header>
@@ -38,31 +39,69 @@ const Layout: FC<
 		</body>
 	</html>
 );
+const validMedia = (url: unknown): url is string =>
+	typeof url === "string" && /^\/media\/[a-f0-9]{64}\.jpg$/.test(url);
+
 const PostList: FC<{ posts: PostSummary[]; page?: number }> = ({
 	posts,
 	page,
 }) =>
 	posts.length ? (
 		<ul class="post-list">
-			{posts.map((post) => (
-				<li>
-					<article>
-						<h2>
+			{posts.map((post, index) => {
+				const scale =
+					post.cover_width && post.cover_height
+						? Math.min(1, 640 / Math.max(post.cover_width, post.cover_height))
+						: null;
+				return (
+					<li>
+						<article class="post-card">
 							<a
-								href={`/posts/${encodeURIComponent(String(post.slug))}${page && page > 1 ? `?page=${page}` : ""}`}
+								class="post-card-link"
+								href={`/posts/${encodeURIComponent(post.slug)}${page && page > 1 ? `?page=${page}` : ""}`}
 							>
-								{String(post.title)}
+								<div class="artwork">
+									<span class="artwork-placeholder" aria-hidden="true">
+										{m.coverMissing}
+									</span>
+									{validMedia(post.cover_url) && (
+										<img
+											data-image-fallback
+											src={post.cover_url}
+											alt=""
+											width={
+												scale && post.cover_width
+													? Math.round(post.cover_width * scale)
+													: undefined
+											}
+											height={
+												scale && post.cover_height
+													? Math.round(post.cover_height * scale)
+													: undefined
+											}
+											loading={index === 0 ? "eager" : "lazy"}
+										/>
+									)}
+								</div>
+								<div class="post-card-details">
+									<h2>{post.title}</h2>
+								</div>
 							</a>
-						</h2>
-						<time dateTime={String(post.published_at)}>
-							{formatDate(String(post.published_at))}
-						</time>
-					</article>
-				</li>
-			))}
+							<div class="post-card-meta">
+								<time dateTime={post.published_at}>
+									{formatDate(post.published_at)}
+								</time>
+								{post.image_count > 1 && (
+									<span>{m.imageCount(post.image_count)}</span>
+								)}
+							</div>
+						</article>
+					</li>
+				);
+			})}
 		</ul>
 	) : (
-		<p>{m.empty}</p>
+		<p class="empty-state">{m.empty}</p>
 	);
 export function createApp(
 	db: Client,
@@ -74,7 +113,7 @@ export function createApp(
 		await next();
 		c.header(
 			"Content-Security-Policy",
-			`default-src 'none'; img-src 'self' ${media.endpoint}; style-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'`,
+			`default-src 'none'; img-src 'self' ${media.endpoint}; style-src 'self'; script-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'`,
 		);
 		c.header("X-Content-Type-Options", "nosniff");
 		c.header("Referrer-Policy", "strict-origin-when-cross-origin");
@@ -106,10 +145,22 @@ export function createApp(
 		const posts = await listPosts(db, 6);
 		return c.html(
 			<Layout title={m.home} canonical={`${siteUrl}/`}>
-				<h1>Klamydiakokoelma</h1>
-				<p>{m.intro}</p>
-				<h2>{m.latest}</h2>
+				<section class="intro">
+					<p class="eyebrow">{m.introLabel}</p>
+					<h1>
+						Klamydia
+						<wbr />
+						kokoelma
+					</h1>
+					<p>{m.intro}</p>
+				</section>
+				<h2 class="section-title">{m.latest}</h2>
 				<PostList posts={posts} />
+				<p class="archive-action">
+					<a class="button" href="/archive">
+						{m.allPosts} <span aria-hidden="true">→</span>
+					</a>
+				</p>
 			</Layout>,
 		);
 	});
@@ -130,9 +181,10 @@ export function createApp(
 				title={m.archive}
 				canonical={`${siteUrl}/archive${page > 1 ? `?page=${page}` : ""}`}
 			>
-				<h1>{m.archive}</h1>
+				<p class="eyebrow">{m.archiveLabel}</p>
+				<h1 class="page-title">{m.archive}</h1>
 				<PostList posts={posts.slice(0, 12)} page={page} />
-				<nav aria-label={m.archivePages}>
+				<nav class="pagination" aria-label={m.archivePages}>
 					{page > 1 && (
 						<a href={page === 2 ? "/archive" : `/archive?page=${page - 1}`}>
 							{m.newer}
@@ -188,11 +240,52 @@ export function createApp(
 				canonical={`${siteUrl}/posts/${encodeURIComponent(String(post.slug))}`}
 				description={reading.text.slice(0, 160)}
 			>
-				<article>
+				<article class="post-detail">
+					<p class="eyebrow">{m.postLabel}</p>
 					<h1>{String(post.title)}</h1>
 					<time dateTime={String(post.published_at)}>
 						{formatDate(String(post.published_at))}
 					</time>
+					<h2 class="section-title">{m.images}</h2>
+					<div class="gallery">
+						{images
+							.filter((image) =>
+								/^\/media\/[a-f0-9]{64}\.jpg$/.test(String(image.url)),
+							)
+							.map((image) => {
+								const url = String(image.url);
+								const preview = validMedia(image.preview_url)
+									? image.preview_url
+									: url;
+								const width = Number(image.width) || 0;
+								const height = Number(image.height) || 0;
+								const scale =
+									width && height
+										? Math.min(1, 640 / Math.max(width, height))
+										: 0;
+								const previewWidth = scale ? Math.round(width * scale) : 0;
+								const previewHeight = scale ? Math.round(height * scale) : 0;
+								return (
+									<a class="gallery-image" href={url}>
+										<img
+											data-image-fallback
+											data-fallback-label={m.coverMissing}
+											src={preview}
+											alt={String(image.alt)}
+											width={previewWidth || undefined}
+											height={previewHeight || undefined}
+											srcSet={
+												preview !== url && previewWidth && previewWidth < width
+													? `${preview} ${previewWidth}w, ${url} ${width}w`
+													: undefined
+											}
+											sizes="(max-width: 700px) 100vw, 32rem"
+											loading="lazy"
+										/>
+									</a>
+								);
+							})}
+					</div>
 					<p class="description">{reading.text}</p>
 					{tags.length > 0 && (
 						<ul class="tags" aria-label={m.tags}>
@@ -229,30 +322,7 @@ export function createApp(
 							</a>
 						</p>
 					)}
-					<h2>{m.images}</h2>
-					<div class="gallery">
-						{images
-							.filter((image) =>
-								/^\/media\/[a-f0-9]{64}\.jpg$/.test(String(image.url)),
-							)
-							.map((image) => (
-								<a href={String(image.url)}>
-									<img
-										src={
-											/^\/media\/[a-f0-9]{64}\.jpg$/.test(
-												String(image.preview_url),
-											)
-												? String(image.preview_url)
-												: String(image.url)
-										}
-										alt={String(image.alt)}
-										width="640"
-										height="640"
-										loading="lazy"
-									/>
-								</a>
-							))}
-					</div>
+
 					<p>
 						<a
 							href={

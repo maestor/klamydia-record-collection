@@ -65,7 +65,8 @@ describe("public response protections", () => {
 			const response = await app.request("/posts/safe");
 			const html = await response.text();
 			document.documentElement.innerHTML = html;
-			expect(document.querySelector("script")).toBeNull();
+			expect(document.querySelector("h1 script")).toBeNull();
+			expect(document.querySelectorAll("script")).toHaveLength(1);
 			expect(document.querySelector("h1")?.textContent).toBe(
 				"<script>alert(1)</script>",
 			);
@@ -133,6 +134,36 @@ it("shows a cleaned reading view while preserving the source description", async
 		expect(
 			(await db.execute("SELECT description FROM posts")).rows[0].description,
 		).toBe(source);
+	} finally {
+		db.close();
+	}
+});
+
+it("uses the stored aspect ratio and responsive preview for a post image", async () => {
+	const db = createClient({ url: "file::memory:" });
+	try {
+		await migrate(db);
+		await db.execute({
+			sql: "INSERT INTO posts VALUES (?, ?, ?, ?)",
+			args: ["portrait", "Levy", "2026-01-01", "Teksti"],
+		});
+		const full = `/media/${"d".repeat(64)}.jpg`;
+		const preview = `/media/${"e".repeat(64)}.jpg`;
+		await db.execute({
+			sql: "INSERT INTO images VALUES (?, ?, ?, ?)",
+			args: ["portrait", 1, full, "Kansi"],
+		});
+		await db.execute({
+			sql: "INSERT INTO instagram_images VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+			args: ["portrait", 1, "10", 800, 1200, "jpeg", "hash", preview],
+		});
+		document.documentElement.innerHTML = await (
+			await createApp(db).request("/posts/portrait")
+		).text();
+		const img = within(document.body).getByRole("img", { name: "Kansi" });
+		expect(img.getAttribute("width")).toBe("427");
+		expect(img.getAttribute("height")).toBe("640");
+		expect(img.getAttribute("srcset")).toBe(`${preview} 427w, ${full} 800w`);
 	} finally {
 		db.close();
 	}

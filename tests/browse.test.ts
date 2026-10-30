@@ -107,3 +107,55 @@ it("publishes canonical post URLs and a sitemap using the configured origin", as
 		db.close();
 	}
 });
+
+it("shows the first preview as a linked card and offers the complete archive", async () => {
+	const db = createClient({ url: "file::memory:" });
+	try {
+		await migrate(db);
+		await db.execute({
+			sql: "INSERT INTO posts VALUES (?, ?, ?, ?)",
+			args: ["record", "Levy", "2026-09-01T22:00:00Z", "Kuvaus"],
+		});
+		const original = `/media/${"a".repeat(64)}.jpg`;
+		const preview = `/media/${"b".repeat(64)}.jpg`;
+		await db.execute({
+			sql: "INSERT INTO images VALUES (?, ?, ?, ?), (?, ?, ?, ?)",
+			args: [
+				"record",
+				1,
+				original,
+				"Kansi",
+				"record",
+				2,
+				`/media/${"c".repeat(64)}.jpg`,
+				"Toinen",
+			],
+		});
+		await db.execute({
+			sql: "INSERT INTO instagram_images VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+			args: ["record", 1, "11", 1200, 800, "jpeg", "hash", preview],
+		});
+		const app = createApp(db);
+		for (const path of ["/", "/archive"]) {
+			document.documentElement.innerHTML = await (
+				await app.request(path)
+			).text();
+			const link = within(document.body).getByRole("link", { name: /Levy/ });
+			expect(link.getAttribute("href")).toBe("/posts/record");
+			const image = link.querySelector("img");
+			expect(image?.getAttribute("src")).toBe(preview);
+			expect(image?.getAttribute("alt")).toBe("");
+			expect(image?.getAttribute("width")).toBe("640");
+			expect(image?.getAttribute("height")).toBe("427");
+			expect(link.closest("article")?.textContent).toContain("2 kuvaa");
+		}
+		document.documentElement.innerHTML = await (await app.request("/")).text();
+		expect(
+			within(document.body)
+				.getByRole("link", { name: "Kaikki julkaisut" })
+				.getAttribute("href"),
+		).toBe("/archive");
+	} finally {
+		db.close();
+	}
+});
