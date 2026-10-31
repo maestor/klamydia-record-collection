@@ -368,7 +368,7 @@ it("shows tag counts in the archive, ordered by popularity then Finnish alphabet
 			"INSERT INTO tags VALUES ('a', 'Ääni'), ('b', 'Öljy'), ('c', 'Aalto')",
 		);
 		await db.execute(
-			"INSERT INTO posts VALUES ('one', 'One', '2026-01-01', ''), ('two', 'Two', '2026-01-02', '')",
+			"INSERT INTO posts VALUES ('one', 'One', '2026-01-01', ''), ('two', 'Two', '2026-01-02', ''), ('three', 'Three', '2026-01-03', '')",
 		);
 		await db.execute(
 			"INSERT INTO post_tags VALUES ('one', 'a'), ('one', 'b'), ('one', 'c'), ('two', 'b')",
@@ -391,6 +391,71 @@ it("shows tag counts in the archive, ordered by popularity then Finnish alphabet
 		).text();
 		expect(
 			within(document.body).getByRole("link", { name: "Öljy" }),
+		).toBeTruthy();
+	} finally {
+		db.close();
+	}
+});
+
+it("hides tags shared by every archive post but keeps post links usable", async () => {
+	const db = createClient({ url: "file::memory:" });
+	try {
+		await migrate(db);
+		await db.execute(
+			"INSERT INTO tags VALUES ('common', 'Common Tag'), ('rare', 'Rare')",
+		);
+		await db.execute(
+			"INSERT INTO posts VALUES ('one', 'One', '2026-01-01', ''), ('two', 'Two', '2026-01-02', ''), ('about', 'About', '2026-01-03', '')",
+		);
+		await db.execute(
+			"INSERT INTO instagram_posts VALUES ('17970239393043334', 'about', 'https://www.instagram.com/p/example/', 'fixture', 'IMAGE', '2026-01-03')",
+		);
+		await db.execute(
+			"INSERT INTO post_tags VALUES ('one', 'common'), ('two', 'common'), ('one', 'rare')",
+		);
+		const app = createApp(db);
+		document.documentElement.innerHTML = await (
+			await app.request("/archive")
+		).text();
+		const list = within(document.body).getByRole("list", {
+			name: m.tags,
+			hidden: true,
+		});
+		expect(within(list).queryByText(/Common Tag/)).toBeNull();
+		expect(within(list).getByText("Rare (1)")).toBeTruthy();
+		document.documentElement.innerHTML = await (
+			await app.request("/posts/one")
+		).text();
+		const href = within(document.body)
+			.getByRole("link", { name: "Common Tag" })
+			.getAttribute("href");
+		expect(href).toBe("/archive?tag=common");
+		document.documentElement.innerHTML = await (
+			await app.request(href ?? "")
+		).text();
+		expect(
+			within(document.body).getByRole("link", {
+				name: m.removeTag("Common Tag"),
+			}),
+		).toBeTruthy();
+		expect(
+			within(document.body).getByRole("link", { name: "One" }),
+		).toBeTruthy();
+		expect(
+			within(document.body).getByRole("link", { name: "Two" }),
+		).toBeTruthy();
+		await db.execute("DELETE FROM post_tags WHERE tag_normalized = 'rare'");
+		document.documentElement.innerHTML = await (
+			await app.request("/archive")
+		).text();
+		expect(within(document.body).queryByText(m.filterTags)).toBeNull();
+		document.documentElement.innerHTML = await (
+			await app.request("/archive?tag=common")
+		).text();
+		expect(
+			within(document.body).getByRole("link", {
+				name: m.removeTag("Common Tag"),
+			}),
 		).toBeTruthy();
 	} finally {
 		db.close();

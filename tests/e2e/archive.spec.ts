@@ -362,3 +362,42 @@ test("filters by tag, loads matching posts, and returns to the filtered archive"
 	await expect(page).toHaveURL(/\/archive$/);
 	await expect(page.getByText("Valittu aihetunniste:")).toBeHidden();
 });
+
+test("moves keyboard focus to the selected tag and continues to the results", async ({
+	page,
+}) => {
+	await page.goto("/archive");
+	const toggle = page.getByText("Hae aihetunnisteilla");
+	await toggle.focus();
+	await page.keyboard.press("Enter");
+	await page.keyboard.press("Tab");
+	await expect(page.getByRole("link", { name: "Punk (14)" })).toBeFocused();
+	await page.keyboard.press("Enter");
+	const selected = page.getByRole("link", { name: "Poista aihetunniste Punk" });
+	await expect(selected).toBeFocused();
+	await page.keyboard.press("Tab");
+	await expect(page.locator(".post-card-link").first()).toBeFocused();
+	await page.keyboard.press("Shift+Tab");
+	await expect(selected).toBeFocused();
+	await page.keyboard.press("Enter");
+	await expect(page).toHaveURL(/\/archive$/);
+});
+
+test("focuses the selected tag without JavaScript", async ({ browser }) => {
+	const context = await browser.newContext({ javaScriptEnabled: false });
+	try {
+		const page = await context.newPage();
+		await page.goto("/archive");
+		await page.getByText("Hae aihetunnisteilla").focus();
+		await page.keyboard.press("Enter");
+		await page.keyboard.press("Tab");
+		await page.keyboard.press("Enter");
+		await expect(
+			page.getByRole("link", { name: "Poista aihetunniste Punk" }),
+		).toBeFocused();
+		await page.keyboard.press("Tab");
+		await expect(page.locator(".post-card-link").first()).toBeFocused();
+	} finally {
+		await context.close();
+	}
+});

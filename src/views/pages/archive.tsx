@@ -9,7 +9,12 @@ import { Layout } from "../layout.js";
 type ArchivePageProps = {
 	posts: PostSummary[];
 	tag?: string;
-	tags: { normalized: string; display: string; count: number }[];
+	tags: {
+		normalized: string;
+		display: string;
+		count: number;
+		filterable: boolean;
+	}[];
 	start: number;
 	end: number;
 	hasMore: boolean;
@@ -25,6 +30,7 @@ export const ArchivePage: FC<ArchivePageProps> = ({
 	hasMore,
 	canonical,
 }) => {
+	const filterTags = tags.filter((item) => item.filterable);
 	const canAppend = end - start < ARCHIVE_BATCH_LIMIT - 1;
 	const selectedTag =
 		tag && (tags.find((item) => item.normalized === tag)?.display ?? tag);
@@ -33,28 +39,36 @@ export const ArchivePage: FC<ArchivePageProps> = ({
 			<PageHeading label={m.archiveLabel} titleClass="page-title">
 				{m.archive}
 			</PageHeading>
-			{(tags.length > 0 || tag) && (
+			{(filterTags.length > 0 || tag) && (
 				<div class="archive-tags">
-					<details>
-						<summary>{m.filterTags}</summary>
-						<ul class="tags" aria-label={m.tags}>
-							{tags.map((item) => (
-								<li>
-									<a
-										href={`/archive${archiveQuery(undefined, undefined, item.normalized)}`}
-										aria-current={tag === item.normalized ? "true" : undefined}
-									>
-										{item.display} (
-										{new Intl.NumberFormat("fi-FI").format(item.count)})
-									</a>
-								</li>
-							))}
-						</ul>
-					</details>
+					{filterTags.length > 0 && (
+						<details>
+							<summary>{m.filterTags}</summary>
+							<ul class="tags" aria-label={m.tags}>
+								{filterTags.map((item) => (
+									<li>
+										<a
+											href={`/archive${archiveQuery(undefined, undefined, item.normalized)}#selected-tag`}
+											aria-current={
+												tag === item.normalized ? "true" : undefined
+											}
+										>
+											{item.display} (
+											{new Intl.NumberFormat("fi-FI").format(item.count)})
+										</a>
+									</li>
+								))}
+							</ul>
+						</details>
+					)}
 					{selectedTag && (
 						<p class="selected-tag">
 							<span>{m.selectedTag}</span>{" "}
-							<a href="/archive" aria-label={m.removeTag(selectedTag)}>
+							<a
+								id="selected-tag"
+								href="/archive"
+								aria-label={m.removeTag(selectedTag)}
+							>
 								{selectedTag} <span aria-hidden="true">×</span>
 							</a>
 						</p>
