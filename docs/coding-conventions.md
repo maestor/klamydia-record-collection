@@ -45,7 +45,7 @@ Use links for navigation, buttons for actions, meaningful headings, accessible c
 
 Add smooth, purposeful transitions to UI changes where they make interactions feel natural, such as changing images, opening dialogs, and expanding content. Respect `prefers-reduced-motion`, keep keyboard and focus behavior responsive, and avoid delaying access to content for the sake of animation.
 
-Keep page asset URLs in `src/views/layout.tsx` and the sitemap stylesheet URL in `src/views/sitemap.ts`. Edit maintained CSS and plain JavaScript in `assets/`, and browser controllers in `src/client/`; `npm run assets:build` writes ignored stable-name output under `public/assets/`. The build runs before dev, production build, and E2E tests. Content-hashed vendor assets and icons still need a new filename and reference when their bytes change; consider cached pages before removing old files as described in [development](development.md).
+Keep page asset URLs in `src/views/layout.tsx` and the sitemap stylesheet URL in `src/views/sitemap.ts`. Edit maintained CSS and plain JavaScript in `assets/`, and browser controllers in `src/client/`; `npm run assets:build` writes stable-name output under `public/assets/`. Commit those six outputs so Vercel includes them. The build runs before dev, production build, and E2E tests. Content-hashed vendor assets and icons still need a new filename and reference when their bytes change; consider cached pages before removing old files as described in [development](development.md).
 
 ## Verification and review
 

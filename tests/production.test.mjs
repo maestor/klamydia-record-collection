@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
@@ -8,6 +8,21 @@ import { promisify } from "node:util";
 import { createClient } from "@libsql/client";
 
 const run = promisify(execFile);
+
+test("the Git deployment includes the current stable browser assets", async () => {
+	for (const name of [
+		"style.css",
+		"sitemap.css",
+		"archive.js",
+		"images.js",
+		"theme.js",
+		"gallery.js",
+	]) {
+		const path = `public/assets/${name}`;
+		const { stdout: committed } = await run("git", ["show", `:${path}`]);
+		assert.equal(committed, await readFile(path, "utf8"), `${path} is stale`);
+	}
+});
 
 test("the compiled Vercel entrypoint serves migrated data without a TS loader", async () => {
 	const directory = await mkdtemp(join(tmpdir(), "collection-production-"));

@@ -3,12 +3,6 @@ node_modules/
 !.env.example
 .data/
 dist/
-public/assets/style.css
-public/assets/archive.js
-public/assets/images.js
-public/assets/sitemap.css
-public/assets/theme.js
-public/assets/gallery.js
 coverage/
 playwright-report/
 test-results/
