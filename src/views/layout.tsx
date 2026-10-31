@@ -41,7 +41,7 @@ export const Layout: FC<LayoutProps> = ({
 					sizes="180x180"
 					href="/assets/favicon-180-90da7e65.png"
 				/>
-				<link rel="stylesheet" href="/assets/style-952030e8.css" />
+				<link rel="stylesheet" href="/assets/style-e58837e1.css" />
 				<script src="/assets/theme-23960695.js"></script>
 				<script src="/assets/images-cc5a7637.js" defer></script>
 				{gallery && <script src="/assets/gallery-d693c11e.js" defer></script>}

@@ -64,3 +64,16 @@ test("card details overlay the artwork and cards stack on small phones", async (
 		}
 	}
 });
+
+test("dark card titles use a stronger translucent surface", async ({
+	page,
+}) => {
+	await page.emulateMedia({ colorScheme: "dark" });
+	await page.goto("/");
+	const title = page.locator(".post-card h2").first();
+	await expect(title).toHaveCSS("background-color", "rgba(15, 17, 15, 0.88)");
+	await page.getByRole("button", { name: /Teema/ }).click();
+	await expect(title).toHaveCSS("background-color", "rgba(15, 17, 15, 0.68)");
+	await page.getByRole("button", { name: /Teema/ }).click();
+	await expect(title).toHaveCSS("background-color", "rgba(15, 17, 15, 0.88)");
+});
