@@ -1,17 +1,8 @@
-import { access } from "node:fs/promises";
 import { serve } from "@hono/node-server";
 import { serveStatic } from "@hono/node-server/serve-static";
-import { createClient } from "@libsql/client";
-import { createApp } from "./app.js";
-import { environment } from "./env.js";
-import { r2Reader } from "./r2-reader.js";
+import { createRuntime } from "./runtime.js";
 
-const { databaseUrl, port, siteUrl } = environment(process.env);
-await access(databaseUrl.slice(5));
-const db = createClient({ url: databaseUrl });
-await db.execute("PRAGMA query_only = ON");
-const media = r2Reader(process.env);
-const app = createApp(db, siteUrl, media);
+const { app, port } = await createRuntime(process.env);
 app.get(
 	"/assets/*",
 	serveStatic({

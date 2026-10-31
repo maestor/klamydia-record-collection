@@ -1,6 +1,6 @@
 import { access } from "node:fs/promises";
 import { createClient } from "@libsql/client";
-import { environment } from "../src/env.js";
+import { localDatabaseUrl } from "../src/env.js";
 import { r2Address, r2Client } from "../src/r2-reader.js";
 import { downloadVerifiedObject, retryTransient } from "./r2-store.js";
 import { restoreCollectionMedia } from "./restore-r2-media.js";
@@ -14,7 +14,7 @@ try {
 		throw new Error(
 			"Set DATABASE_URL to the existing local collection database.",
 		);
-	const { databaseUrl } = environment(process.env);
+	const databaseUrl = localDatabaseUrl(process.env.DATABASE_URL);
 	await access(databaseUrl.slice(5));
 	const address = r2Address(process.env);
 	const reader = r2Client(

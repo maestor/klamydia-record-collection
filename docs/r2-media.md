@@ -6,4 +6,4 @@ HTML uses stable `/media/<content-hash>.jpg` URLs. The app checks that each key 
 
 For recovery or an independent backup, `npm run r2:restore -- --apply` downloads all referenced images to `.data/restored-media/`, verifies their hashes, and refuses to overwrite files with different contents. These files are not served by the app. The command does not restore the database; back up SQLite separately. A single bucket copy is not an independent backup, so arrange a separate backup for long-term recovery.
 
-This integration does not move SQLite to Turso, configure Cloudflare CDN caching, or publish the website. Public access to images is mediated by the application, and browser caches may retain bytes already served.
+For Turso, Vercel, and production environment settings, see [production deployment](deployment.md). R2 setup does not configure Cloudflare CDN caching. Public access to images is mediated by the application, and browser caches may retain bytes already served.
