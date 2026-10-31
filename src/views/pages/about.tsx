@@ -1,11 +1,13 @@
 import type { FC } from "hono/jsx";
-import { messages as m } from "#i18n/fi";
+import { formatDate, messages as m } from "#i18n/fi";
+import { GitHubIcon } from "../components/github-icon.js";
 import { InstagramIcon } from "../components/instagram-icon.js";
 import { Layout } from "../layout.js";
 
 type AboutPageProps = {
 	canonical: string;
 	available: boolean;
+	publishedAt?: string;
 	description: string;
 	image?: { src: string; width?: number; height?: number };
 };
@@ -13,6 +15,7 @@ type AboutPageProps = {
 export const AboutPage: FC<AboutPageProps> = ({
 	canonical,
 	available,
+	publishedAt,
 	description,
 	image,
 }) => (
@@ -24,43 +27,57 @@ export const AboutPage: FC<AboutPageProps> = ({
 		<article class="about-page">
 			<p class="eyebrow">Klamydiakokoelma</p>
 			<h1 class="page-title">{m.aboutTitle}</h1>
-			{available ? (
-				<>
-					<p class="about-date">
-						<time dateTime="2023-01-02">{m.aboutWritten}</time>
-					</p>
-					<div class="about-content">
-						<div class="about-image">
-							{image ? (
-								<img
-									data-image-fallback
-									data-fallback-label={m.coverMissing}
-									src={image.src}
-									alt={m.aboutImageAlt}
-									width={image.width}
-									height={image.height}
-								/>
-							) : (
-								<p class="image-failure">{m.coverMissing}</p>
-							)}
-						</div>
-						<div>
-							<p class="description">{description}</p>
-							<p>
-								<a
-									class="source-link"
-									href="https://www.instagram.com/klamydiakokoelma/"
-								>
-									<InstagramIcon />
-									{m.followInstagram}
-								</a>
-							</p>
-						</div>
+			<p class="about-links">
+				<a
+					class="source-link"
+					href="https://www.instagram.com/klamydiakokoelma/"
+				>
+					<InstagramIcon />
+					{m.followInstagram}
+				</a>
+				<span class="about-github-group">
+					<span class="about-link-divider" aria-hidden="true">
+						•
+					</span>
+					<a
+						class="source-link"
+						href="https://github.com/maestor/klamydia-record-collection"
+					>
+						<GitHubIcon />
+						{m.siteImplementation}
+					</a>
+				</span>
+			</p>
+			<div class="about-content">
+				{available && (
+					<div class="about-image">
+						{image ? (
+							<img
+								data-image-fallback
+								data-fallback-label={m.coverMissing}
+								src={image.src}
+								alt={m.aboutImageAlt}
+								width={image.width}
+								height={image.height}
+							/>
+						) : (
+							<p class="image-failure">{m.coverMissing}</p>
+						)}
 					</div>
-				</>
-			) : (
-				<p class="empty-state">{m.aboutUnavailable}</p>
-			)}
+				)}
+				<section>
+					<h2>{m.aboutIntroTitle}</h2>
+					<p class="description">{m.aboutIntro}</p>
+				</section>
+				{available && publishedAt ? (
+					<section>
+						<h2>{m.aboutPostTitle(formatDate(publishedAt))}</h2>
+						<p class="description">{description}</p>
+					</section>
+				) : (
+					<p class="empty-state">{m.aboutUnavailable}</p>
+				)}
+			</div>
 		</article>
 	</Layout>
 );

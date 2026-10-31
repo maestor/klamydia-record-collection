@@ -20,7 +20,10 @@ export type Post = {
 	permalink: string | null;
 };
 
-export type AboutPost = Pick<Post, "slug" | "title" | "description">;
+export type AboutPost = Pick<
+	Post,
+	"slug" | "title" | "description" | "published_at"
+>;
 
 export type PostImage = {
 	url: string;
@@ -104,7 +107,7 @@ export async function getTags(db: Client, slug: string) {
 export async function getAboutPost(db: Client): Promise<AboutPost | undefined> {
 	const row = (
 		await db.execute({
-			sql: "SELECT p.slug, p.title, p.description FROM posts p JOIN instagram_posts ip ON ip.post_slug = p.slug WHERE ip.media_id = ?",
+			sql: "SELECT p.slug, p.title, p.description, p.published_at FROM posts p JOIN instagram_posts ip ON ip.post_slug = p.slug WHERE ip.media_id = ?",
 			args: [ABOUT_MEDIA_ID],
 		})
 	).rows[0];
@@ -113,6 +116,7 @@ export async function getAboutPost(db: Client): Promise<AboutPost | undefined> {
 				slug: String(row.slug),
 				title: String(row.title),
 				description: String(row.description),
+				published_at: String(row.published_at),
 			}
 		: undefined;
 }

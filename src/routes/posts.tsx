@@ -31,6 +31,7 @@ export function createPostRoutes(db: Client, siteUrl: string) {
 			<AboutPage
 				canonical={`${siteUrl}/about`}
 				available={Boolean(post)}
+				publishedAt={post?.published_at}
 				description={description}
 				image={illustration}
 			/>,

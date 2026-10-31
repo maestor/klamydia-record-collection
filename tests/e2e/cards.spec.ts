@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { messages as m } from "../../src/i18n/fi.js";
 
 test("a visitor can still open a post when its cover image fails", async ({
 	page,
@@ -7,7 +8,7 @@ test("a visitor can still open a post when its cover image fails", async ({
 	await page.goto("/");
 	const card = page.getByRole("link", { name: "Esimerkkijulkaisu 27" });
 	await expect(card.locator("img")).toHaveCount(0);
-	await expect(card.getByText("Kuvaa ei saatavilla")).toBeVisible();
+	await expect(card.getByText(m.coverMissing)).toBeVisible();
 	await card.click();
 	await expect(page).toHaveURL(/posts\/esimerkki-27$/);
 });
@@ -50,9 +51,11 @@ test("card details overlay the artwork and cards stack on small phones", async (
 				expect(second.y).toBeGreaterThan(first.y + first.height - 1);
 			else expect(second.y).toBe(first.y);
 			await page.goto("/archive?page=3");
-			const multi = page.locator(".post-card").filter({ hasText: "2 kuvaa" });
+			const multi = page
+				.locator(".post-card")
+				.filter({ hasText: m.imageCount(2) });
 			const dateBox = await multi.locator("time").boundingBox();
-			const countBox = await multi.getByText("2 kuvaa").boundingBox();
+			const countBox = await multi.getByText(m.imageCount(2)).boundingBox();
 			if (!dateBox || !countBox) throw new Error("Card metadata not visible");
 			expect(countBox.x).toBeGreaterThan(dateBox.x + dateBox.width);
 			expect(countBox.y).toBe(dateBox.y);

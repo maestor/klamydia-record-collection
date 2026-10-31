@@ -1,10 +1,11 @@
 import { expect, test } from "@playwright/test";
+import { messages as m } from "../../src/i18n/fi.js";
 
 test("browses images in source order with buttons, keyboard and thumbnails", async ({
 	page,
 }) => {
 	await page.goto("/posts/esimerkki");
-	const gallery = page.getByRole("region", { name: "Kuvat" });
+	const gallery = page.getByRole("region", { name: m.images });
 	await expect(gallery.getByRole("status")).toHaveText("Kuva 1 / 2");
 	await expect(
 		gallery.getByRole("img", { name: "Kuvitteellinen levykansi" }),
@@ -12,7 +13,7 @@ test("browses images in source order with buttons, keyboard and thumbnails", asy
 	await expect(
 		gallery.getByRole("img", { name: "Kuvitteellinen toinen kuva" }),
 	).toBeHidden();
-	const next = gallery.getByRole("button", { name: "Seuraava kuva" });
+	const next = gallery.getByRole("button", { name: m.galleryNext });
 	await next.focus();
 	await page.keyboard.press("Enter");
 	await expect(next).toBeFocused();
@@ -22,10 +23,16 @@ test("browses images in source order with buttons, keyboard and thumbnails", asy
 	).toBeVisible();
 	await page.keyboard.press("ArrowRight");
 	await expect(gallery.getByRole("status")).toHaveText("Kuva 1 / 2");
-	await gallery.getByRole("button", { name: "Näytä pikkukuvat" }).click();
+	await gallery
+		.getByRole("button", { name: m.galleryToggleThumbnails })
+		.click();
 	const thumbnail = gallery
-		.getByRole("group", { name: "Pikkukuvat" })
-		.getByRole("button", { name: "Näytä kuva 2 / 2" });
+		.getByRole("group", { name: m.galleryThumbnails })
+		.getByRole("button", {
+			name: m.galleryThumbnail
+				.replace("{current}", "2")
+				.replace("{total}", "2"),
+		});
 	await thumbnail.click();
 	await expect(thumbnail).toBeFocused();
 	await expect(thumbnail).toHaveAttribute("aria-pressed", "true");
@@ -38,13 +45,15 @@ test("keeps controls over the artwork and reveals thumbnails only on request", a
 	for (const width of [390, 1440]) {
 		await page.setViewportSize({ width, height: 900 });
 		await page.goto("/posts/esimerkki");
-		const gallery = page.getByRole("region", { name: "Kuvat" });
+		const gallery = page.getByRole("region", { name: m.images });
 		const strip = gallery.getByRole("group", {
-			name: "Pikkukuvat",
+			name: m.galleryThumbnails,
 			includeHidden: true,
 		});
 		await expect(strip).toBeHidden();
-		const toggle = gallery.getByRole("button", { name: "Näytä pikkukuvat" });
+		const toggle = gallery.getByRole("button", {
+			name: m.galleryToggleThumbnails,
+		});
 		await expect(toggle).toHaveAttribute("aria-expanded", "false");
 		const image = await gallery
 			.getByRole("link", { name: "Kuvitteellinen levykansi" })
@@ -52,10 +61,10 @@ test("keeps controls over the artwork and reveals thumbnails only on request", a
 		const galleryBox = await gallery.boundingBox();
 		if (!image || !galleryBox) throw new Error("Gallery not visible");
 		for (const name of [
-			"Edellinen kuva",
-			"Seuraava kuva",
-			"Suurenna kuva",
-			"Näytä pikkukuvat",
+			m.galleryPrevious,
+			m.galleryNext,
+			m.galleryEnlarge,
+			m.galleryToggleThumbnails,
 		]) {
 			const box = await gallery
 				.getByRole("button", { name, exact: true })
@@ -67,8 +76,12 @@ test("keeps controls over the artwork and reveals thumbnails only on request", a
 			expect(box.height).toBeGreaterThanOrEqual(44);
 		}
 		expect(galleryBox.height - image.height).toBeLessThanOrEqual(48);
-		const dots = gallery.getByRole("group", { name: "Valitse kuva" });
-		const second = dots.getByRole("button", { name: "Näytä kuva 2 / 2" });
+		const dots = gallery.getByRole("group", { name: m.galleryPagination });
+		const second = dots.getByRole("button", {
+			name: m.galleryThumbnail
+				.replace("{current}", "2")
+				.replace("{total}", "2"),
+		});
 		await second.click();
 		await expect(second).toHaveAttribute("aria-pressed", "true");
 		await expect(gallery.getByRole("status")).toHaveText("Kuva 2 / 2");
@@ -77,7 +90,11 @@ test("keeps controls over the artwork and reveals thumbnails only on request", a
 		await expect(strip).toBeVisible();
 		await expect(toggle).toHaveAttribute("aria-expanded", "true");
 		await expect(
-			strip.getByRole("button", { name: "Näytä kuva 2 / 2" }),
+			strip.getByRole("button", {
+				name: m.galleryThumbnail
+					.replace("{current}", "2")
+					.replace("{total}", "2"),
+			}),
 		).toHaveAttribute("aria-pressed", "true");
 		await page.keyboard.press("Enter");
 		await expect(strip).toBeHidden();
@@ -96,7 +113,7 @@ test("opens a larger image with an icon close button and returns focus after Esc
 	await page.goto("/posts/esimerkki");
 	const opener = page.getByRole("link", { name: "Kuvitteellinen levykansi" });
 	await opener.click();
-	const dialog = page.getByRole("dialog", { name: "Suurempi kuva" });
+	const dialog = page.getByRole("dialog", { name: m.galleryDialog });
 	await expect(dialog).toBeVisible();
 	await expect
 		.poll(() =>
@@ -105,13 +122,21 @@ test("opens a larger image with an icon close button and returns focus after Esc
 				.evaluate((img: HTMLImageElement) => img.naturalWidth),
 		)
 		.toBeGreaterThan(0);
-	await expect(dialog.getByRole("button", { name: "Sulje" })).toBeFocused();
-	await expect(dialog.getByRole("button", { name: "Sulje" })).toHaveText("");
+	await expect(
+		dialog.getByRole("button", { name: m.galleryClose }),
+	).toBeFocused();
+	await expect(dialog.getByRole("button", { name: m.galleryClose })).toHaveText(
+		"",
+	);
 	await expect(dialog.getByRole("link")).toHaveCount(0);
 	await page.keyboard.press("Tab");
-	await expect(dialog.getByRole("button", { name: "Sulje" })).toBeFocused();
+	await expect(
+		dialog.getByRole("button", { name: m.galleryClose }),
+	).toBeFocused();
 	await page.keyboard.press("Shift+Tab");
-	await expect(dialog.getByRole("button", { name: "Sulje" })).toBeFocused();
+	await expect(
+		dialog.getByRole("button", { name: m.galleryClose }),
+	).toBeFocused();
 	await page.keyboard.press("Escape");
 	await expect(dialog).toBeHidden();
 	await expect(opener).toBeFocused();
@@ -121,7 +146,7 @@ test("the modal close button stays inside the panel while the original image loa
 	page,
 }) => {
 	await page.goto("/posts/esimerkki");
-	const gallery = page.getByRole("region", { name: "Kuvat" });
+	const gallery = page.getByRole("region", { name: m.images });
 	const original = await gallery
 		.locator(".gallery-image")
 		.nth(1)
@@ -135,16 +160,16 @@ test("the modal close button stays inside the panel while the original image loa
 		await route.continue();
 	});
 	try {
-		await gallery.getByRole("button", { name: "Seuraava kuva" }).click();
-		await gallery.getByRole("button", { name: "Suurenna kuva" }).click();
-		const dialog = page.getByRole("dialog", { name: "Suurempi kuva" });
+		await gallery.getByRole("button", { name: m.galleryNext }).click();
+		await gallery.getByRole("button", { name: m.galleryEnlarge }).click();
+		const dialog = page.getByRole("dialog", { name: m.galleryDialog });
 		const panel = await dialog.boundingBox();
 		const close = await dialog
-			.getByRole("button", { name: "Sulje" })
+			.getByRole("button", { name: m.galleryClose })
 			.boundingBox();
 		if (!panel || !close) throw new Error("Modal not visible");
 		expect(close.y + close.height).toBeLessThanOrEqual(panel.y + panel.height);
-		await dialog.getByRole("button", { name: "Sulje" }).click();
+		await dialog.getByRole("button", { name: m.galleryClose }).click();
 		await expect(dialog).toBeHidden();
 	} finally {
 		release();
@@ -169,21 +194,36 @@ test("a twenty-image gallery stays compact and every image remains reachable on 
 }) => {
 	await page.setViewportSize({ width: 320, height: 800 });
 	await page.goto("/posts/esimerkki-26");
-	const gallery = page.getByRole("region", { name: "Kuvat" });
+	const gallery = page.getByRole("region", { name: m.images });
 	await expect(gallery.getByRole("status")).toHaveText("Kuva 1 / 20");
-	await gallery.getByRole("button", { name: "Edellinen kuva" }).click();
+	await gallery.getByRole("button", { name: m.galleryPrevious }).click();
 	await expect(gallery.getByRole("status")).toHaveText("Kuva 20 / 20");
-	const dots = gallery.getByRole("group", { name: "Valitse kuva" });
+	const dots = gallery.getByRole("group", { name: m.galleryPagination });
 	await expect(dots.getByRole("button")).toHaveCount(20);
 	await dots
-		.getByRole("button", { name: "Näytä kuva 10 / 20", exact: true })
+		.getByRole("button", {
+			name: m.galleryThumbnail
+				.replace("{current}", "10")
+				.replace("{total}", "20"),
+			exact: true,
+		})
 		.click();
 	await expect(gallery.getByRole("status")).toHaveText("Kuva 10 / 20");
-	await gallery.getByRole("button", { name: "Näytä pikkukuvat" }).click();
-	const strip = gallery.getByRole("group", { name: "Pikkukuvat" });
-	await strip.getByRole("button", { name: "Näytä kuva 20 / 20" }).click();
+	await gallery
+		.getByRole("button", { name: m.galleryToggleThumbnails })
+		.click();
+	const strip = gallery.getByRole("group", { name: m.galleryThumbnails });
+	await strip
+		.getByRole("button", {
+			name: m.galleryThumbnail
+				.replace("{current}", "20")
+				.replace("{total}", "20"),
+		})
+		.click();
 	await expect(gallery.getByRole("status")).toHaveText("Kuva 20 / 20");
-	await gallery.getByRole("button", { name: "Näytä pikkukuvat" }).click();
+	await gallery
+		.getByRole("button", { name: m.galleryToggleThumbnails })
+		.click();
 	const frame = await gallery.locator(".gallery-stage").boundingBox();
 	const box = await gallery.boundingBox();
 	if (!frame || !box) throw new Error("Gallery not visible");
@@ -199,18 +239,22 @@ test("one-image posts do not show unnecessary slide controls", async ({
 	page,
 }) => {
 	await page.goto("/posts/esimerkki-27");
-	const gallery = page.getByRole("region", { name: "Kuvat" });
+	const gallery = page.getByRole("region", { name: m.images });
 	await expect(gallery.getByRole("img")).toBeVisible();
 	await expect(
-		gallery.getByRole("button", { name: "Seuraava kuva" }),
+		gallery.getByRole("button", { name: m.galleryNext }),
 	).toHaveCount(0);
-	await expect(gallery.getByRole("button", { name: /Näytä kuva/ })).toHaveCount(
-		0,
-	);
-	const enlarge = gallery.getByRole("button", { name: "Suurenna kuva" });
+	await expect(
+		gallery.getByRole("button", {
+			name: m.galleryThumbnail
+				.replace("{current}", "1")
+				.replace("{total}", "1"),
+		}),
+	).toHaveCount(0);
+	const enlarge = gallery.getByRole("button", { name: m.galleryEnlarge });
 	await enlarge.click();
 	await expect(
-		page.getByRole("dialog", { name: "Suurempi kuva" }),
+		page.getByRole("dialog", { name: m.galleryDialog }),
 	).toBeVisible();
 	await page.keyboard.press("Escape");
 	await expect(enlarge).toBeFocused();
@@ -248,7 +292,7 @@ test("swipes between images on touch and works with reduced motion", async ({
 		});
 		await expect(page.getByRole("status")).toHaveText("Kuva 2 / 2");
 		await expect(
-			page.getByRole("dialog", { name: "Suurempi kuva" }),
+			page.getByRole("dialog", { name: m.galleryDialog }),
 		).toHaveCount(0);
 	} finally {
 		await context.close();
@@ -260,15 +304,15 @@ test("keeps images reachable and the viewer closable if image loading fails", as
 }) => {
 	await page.route("**/media/**", (route) => route.abort());
 	await page.goto("/posts/esimerkki");
-	const gallery = page.getByRole("region", { name: "Kuvat" });
+	const gallery = page.getByRole("region", { name: m.images });
 	await expect(
-		gallery.getByRole("link", { name: "Kuvaa ei saatavilla" }),
+		gallery.getByRole("link", { name: m.coverMissing }),
 	).toBeVisible();
-	await gallery.getByRole("button", { name: "Seuraava kuva" }).click();
+	await gallery.getByRole("button", { name: m.galleryNext }).click();
 	await expect(gallery.getByRole("status")).toHaveText("Kuva 2 / 2");
-	await gallery.getByRole("link", { name: "Kuvaa ei saatavilla" }).click();
-	const viewer = page.getByRole("dialog", { name: "Suurempi kuva" });
-	await expect(viewer.getByText("Kuvaa ei saatavilla")).toBeVisible();
+	await gallery.getByRole("link", { name: m.coverMissing }).click();
+	const viewer = page.getByRole("dialog", { name: m.galleryDialog });
+	await expect(viewer.getByText(m.coverMissing)).toBeVisible();
 	for (let i = 0; i < 3; i++) {
 		await page.keyboard.press("Tab");
 		expect(
@@ -277,9 +321,9 @@ test("keeps images reachable and the viewer closable if image loading fails", as
 			),
 		).toBe(true);
 	}
-	await viewer.getByRole("button", { name: "Sulje" }).click();
+	await viewer.getByRole("button", { name: m.galleryClose }).click();
 	await expect(
-		gallery.getByRole("link", { name: "Kuvaa ei saatavilla" }),
+		gallery.getByRole("link", { name: m.coverMissing }),
 	).toBeFocused();
 });
 
@@ -293,15 +337,15 @@ test("does not duplicate gallery controls after reload or history restoration", 
 		.getAttribute("src");
 	if (!script) throw new Error("Gallery script is missing");
 	await page.addScriptTag({ url: script });
-	await expect(page.getByRole("button", { name: "Seuraava kuva" })).toHaveCount(
+	await expect(page.getByRole("button", { name: m.galleryNext })).toHaveCount(
 		1,
 	);
 	await page.goto("/");
 	await page.goBack();
-	await expect(page.getByRole("button", { name: "Seuraava kuva" })).toHaveCount(
+	await expect(page.getByRole("button", { name: m.galleryNext })).toHaveCount(
 		1,
 	);
-	await page.getByRole("button", { name: "Seuraava kuva" }).click();
+	await page.getByRole("button", { name: m.galleryNext }).click();
 	await expect(page.getByRole("status")).toHaveText("Kuva 2 / 2");
 });
 
@@ -319,12 +363,16 @@ test("loads previews without downloading every original before opening the viewe
 	expect(secondOriginal).toBeTruthy();
 	expect(requested).not.toContain(secondOriginal);
 	await page
-		.getByRole("group", { name: "Valitse kuva" })
-		.getByRole("button", { name: "Näytä kuva 2 / 2" })
+		.getByRole("group", { name: m.galleryPagination })
+		.getByRole("button", {
+			name: m.galleryThumbnail
+				.replace("{current}", "2")
+				.replace("{total}", "2"),
+		})
 		.click();
 	await page.getByRole("link", { name: "Kuvitteellinen toinen kuva" }).click();
 	await expect(
-		page.getByRole("dialog", { name: "Suurempi kuva" }),
+		page.getByRole("dialog", { name: m.galleryDialog }),
 	).toBeVisible();
 	await expect.poll(() => requested.includes(secondOriginal ?? "")).toBe(true);
 });
@@ -340,7 +388,7 @@ test("preserves every full-image link if gallery initialization cannot load", as
 	await expect(
 		page.getByRole("link", { name: "Kuvitteellinen toinen kuva" }),
 	).toBeVisible();
-	await expect(page.getByRole("button", { name: "Seuraava kuva" })).toHaveCount(
+	await expect(page.getByRole("button", { name: m.galleryNext })).toHaveCount(
 		0,
 	);
 });
@@ -385,11 +433,11 @@ test("keeps a stable gallery frame for portrait and landscape images", async ({
 	page,
 }) => {
 	await page.goto("/posts/esimerkki");
-	const gallery = page.getByRole("region", { name: "Kuvat" });
+	const gallery = page.getByRole("region", { name: m.images });
 	const first = await gallery
 		.getByRole("link", { name: "Kuvitteellinen levykansi" })
 		.boundingBox();
-	await gallery.getByRole("button", { name: "Seuraava kuva" }).click();
+	await gallery.getByRole("button", { name: m.galleryNext }).click();
 	const second = await gallery
 		.getByRole("link", { name: "Kuvitteellinen toinen kuva" })
 		.boundingBox();
