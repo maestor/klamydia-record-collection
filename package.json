@@ -10,6 +10,9 @@
 	"scripts": {
 		"dev": "node --conditions=development --env-file-if-exists=.env --watch --import tsx src/server.ts",
 		"db:migrate": "node --conditions=development --import tsx scripts/migrate.ts",
+		"db:migrate:pending": "node --conditions=development --import tsx scripts/check-pending-migrations.ts",
+		"db:backup": "node --conditions=development --import tsx scripts/backup-database.ts",
+		"db:backup:turso": "node --conditions=development --env-file=.env.turso-import --import tsx scripts/backup-database.ts",
 		"db:migrate:turso": "node --conditions=development --env-file=.env.turso-import --import tsx scripts/migrate.ts",
 		"instagram:check": "node --conditions=development --env-file-if-exists=.env --import tsx scripts/instagram-access.ts",
 		"import:instagram": "node --conditions=development --env-file-if-exists=.env --import tsx scripts/import-instagram.ts",

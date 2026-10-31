@@ -3,7 +3,44 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createClient } from "@libsql/client";
 import { expect, it } from "vitest";
-import { migrate } from "../src/db.js";
+import { getPendingMigrationNames, migrate } from "../src/db.js";
+
+it("reports pending migrations without creating a ledger and rejects changed applied files", async () => {
+	const directory = await mkdtemp(join(tmpdir(), "collection-pending-"));
+	const db = createClient({ url: "file::memory:" });
+	try {
+		await writeFile(
+			join(directory, "001_test.sql"),
+			"CREATE TABLE records (title TEXT);",
+		);
+		expect(await getPendingMigrationNames(db, directory)).toEqual([
+			"001_test.sql",
+		]);
+		expect(
+			(await db.execute("SELECT name FROM sqlite_master WHERE type = 'table'"))
+				.rows,
+		).toEqual([]);
+		await migrate(db, directory);
+		expect(await getPendingMigrationNames(db, directory)).toEqual([]);
+		await writeFile(
+			join(directory, "002_data.sql"),
+			"INSERT INTO records VALUES ('Levy');",
+		);
+		expect(await getPendingMigrationNames(db, directory)).toEqual([
+			"002_data.sql",
+		]);
+		await writeFile(
+			join(directory, "001_test.sql"),
+			"CREATE TABLE changed (title TEXT);",
+		);
+		await expect(getPendingMigrationNames(db, directory)).rejects.toThrow(
+			/changed/,
+		);
+	} finally {
+		db.close();
+		await rm(directory, { recursive: true, force: true });
+	}
+});
 
 it("adopts an existing collection and applies later migrations only once", async () => {
 	const db = createClient({ url: "file::memory:" });

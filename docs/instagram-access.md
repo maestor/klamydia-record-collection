@@ -67,7 +67,7 @@ For a small initial sample, use `--limit 3 --dry-run` followed by `--limit 3`, t
 
 ### Later manual updates
 
-Use the current deployed revision of this repository. Ensure its migrations have been applied (the release workflow does this; `npm run db:migrate:turso` also applies pending migrations). Back up production before a write, and run only one importer per database, outside a production migration/deployment. Then:
+Use the current deployed revision of this repository. Ensure its migrations have been applied (the independent Production Migration workflow does this; `npm run db:migrate:turso` also applies pending migrations). Run `npm run db:backup:turso` before a production write, and run only one importer per database, outside a production migration/deployment. Then:
 
 ```sh
 npm run import:instagram:turso -- --full --dry-run

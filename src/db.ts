@@ -3,11 +3,11 @@ import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { Client } from "@libsql/client";
 
-export async function migrate(db: Client, directory = "migrations") {
+async function readMigrations(directory: string) {
 	const names = (await readdir(directory))
 		.filter((name) => /^\d+_[a-z0-9_-]+\.sql$/.test(name))
 		.sort();
-	const migrations = await Promise.all(
+	return Promise.all(
 		names.map(async (name) => {
 			const sql = await readFile(join(directory, name), "utf8");
 			return {
@@ -17,6 +17,35 @@ export async function migrate(db: Client, directory = "migrations") {
 			};
 		}),
 	);
+}
+
+export async function getPendingMigrationNames(
+	db: Client,
+	directory = "migrations",
+) {
+	const migrations = await readMigrations(directory);
+	const table = await db.execute(
+		"SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'schema_migrations'",
+	);
+	const applied = new Map(
+		table.rows.length
+			? (
+					await db.execute("SELECT name, checksum FROM schema_migrations")
+				).rows.map((row) => [String(row.name), String(row.checksum)])
+			: [],
+	);
+	return migrations
+		.filter((migration) => {
+			if (!applied.has(migration.name)) return true;
+			if (applied.get(migration.name) !== migration.checksum)
+				throw new Error(`Applied migration has changed: ${migration.name}`);
+			return false;
+		})
+		.map((migration) => migration.name);
+}
+
+export async function migrate(db: Client, directory = "migrations") {
+	const migrations = await readMigrations(directory);
 	const transaction = await db.transaction("write");
 	try {
 		await transaction.execute(
