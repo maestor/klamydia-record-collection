@@ -46,7 +46,7 @@ test("card details overlay the artwork and cards stack on small phones", async (
 				artwork.y + artwork.height,
 			);
 			expect(date.y).toBeGreaterThanOrEqual(artwork.y);
-			expect(title.y + title.height).toBeLessThan(date.y);
+			expect(date.y + date.height).toBeLessThan(title.y);
 			if (width === 390)
 				expect(second.y).toBeGreaterThan(first.y + first.height - 1);
 			else expect(second.y).toBe(first.y);

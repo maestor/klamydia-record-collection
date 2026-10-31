@@ -190,7 +190,7 @@ test("loads the next batch when scrolling down without moving keyboard focus", a
 	try {
 		const page = await context.newPage();
 		await page.goto("/archive");
-		const home = page.getByRole("link", { name: m.archiveLabel });
+		const home = page.getByRole("link", { name: "Klamydiakokoelma" });
 		await home.focus();
 		await page.mouse.wheel(0, 30000);
 		await expect(page.locator(".post-card")).toHaveCount(24);

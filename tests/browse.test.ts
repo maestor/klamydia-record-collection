@@ -5,6 +5,26 @@ import { migrate } from "../src/db.js";
 import { messages as m } from "../src/i18n/fi.js";
 import { createTestApp as createApp } from "./helpers.js";
 
+it("serves full HTML documents in standards mode", async () => {
+	const db = createClient({ url: "file::memory:" });
+	try {
+		await migrate(db);
+		const app = createApp(db);
+		for (const path of [
+			"/",
+			"/archive",
+			"/about",
+			"/posts/missing",
+			"/archive?page=0",
+		]) {
+			const response = await app.request(path);
+			expect(await response.text()).toMatch(/^<!doctype html>/i);
+		}
+	} finally {
+		db.close();
+	}
+});
+
 describe("collection browsing", () => {
 	it("shows recent posts and paginates the archive newest first", async () => {
 		const db = createClient({ url: "file::memory:" });
