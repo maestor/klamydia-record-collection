@@ -2,6 +2,7 @@ import { createClient } from "@libsql/client";
 import { within } from "@testing-library/dom";
 import { expect, it } from "vitest";
 import { migrate } from "../src/db.js";
+import { formatDate, messages as m } from "../src/i18n/fi.js";
 import { createTestApp } from "./helpers.js";
 
 const mediaId = "17970239393043334";
@@ -55,14 +56,24 @@ it("presents the introduction as About and excludes it from browsing", async () 
 		expect(response.status).toBe(200);
 		document.documentElement.innerHTML = await response.text();
 		const page = within(document.body);
-		expect(
-			page.getByRole("heading", { name: "Tietoa kokoelmasta" }),
-		).toBeTruthy();
-		expect(page.getByText("Kirjoitettu 2.1.2023")).toBeTruthy();
+		expect(page.getByRole("heading", { name: m.aboutTitle })).toBeTruthy();
+		expect(page.getByRole("heading", { name: m.aboutIntroTitle })).toBeTruthy();
 		expect(
 			page
-				.getByRole("img", { name: "Klamydia-kaseteista tehty kello" })
-				.getAttribute("src"),
+				.getByRole("link", { name: m.siteImplementation })
+				.getAttribute("href"),
+		).toBe("https://github.com/maestor/klamydia-record-collection");
+		expect(
+			page.getByRole("heading", { name: m.aboutIntroTitle }).nextElementSibling
+				?.textContent,
+		).toBe(m.aboutIntro);
+		expect(
+			page.getByRole("heading", {
+				name: m.aboutPostTitle(formatDate("2023-01-02T21:02:02Z")),
+			}),
+		).toBeTruthy();
+		expect(
+			page.getByRole("img", { name: m.aboutImageAlt }).getAttribute("src"),
 		).toBe(image);
 		expect(page.getByText("Kokoelma & <teksti>.")).toBeTruthy();
 		expect(document.querySelector(".description")?.textContent).not.toContain(
@@ -70,13 +81,11 @@ it("presents the introduction as About and excludes it from browsing", async () 
 		);
 		expect(document.querySelector(".gallery, .tags")).toBeNull();
 		expect(
-			page
-				.getByRole("link", { name: "Seuraa instagramissa" })
-				.getAttribute("href"),
+			page.getByRole("link", { name: m.followInstagram }).getAttribute("href"),
 		).toBe("https://www.instagram.com/klamydiakokoelma/");
-		expect(
-			page.getByRole("link", { name: "Tietoa" }).getAttribute("href"),
-		).toBe("/about");
+		expect(page.getByRole("link", { name: m.about }).getAttribute("href")).toBe(
+			"/about",
+		);
 		expect(
 			document.querySelector("link[rel=canonical]")?.getAttribute("href"),
 		).toBe("https://example.test/about");
@@ -108,7 +117,7 @@ it("presents the introduction as About and excludes it from browsing", async () 
 			await app.request("/about")
 		).text();
 		const illustration = within(document.body).getByRole("img", {
-			name: "Klamydia-kaseteista tehty kello",
+			name: m.aboutImageAlt,
 		});
 		expect(illustration.getAttribute("src")).toBe(preview);
 		expect(illustration.getAttribute("width")).toBe("1200");
@@ -129,11 +138,7 @@ it("explains when the introduction is unavailable without choosing another post"
 		const response = await createTestApp(db).request("/about");
 		expect(response.status).toBe(200);
 		document.documentElement.innerHTML = await response.text();
-		expect(
-			within(document.body).getByText(
-				"Tietoja kokoelmasta ei ole tällä hetkellä saatavilla.",
-			),
-		).toBeTruthy();
+		expect(within(document.body).getByText(m.aboutUnavailable)).toBeTruthy();
 		expect(document.body.textContent).not.toContain("Vanhempi levy");
 	} finally {
 		db.close();
@@ -169,9 +174,7 @@ it("keeps the introduction readable when its image is missing or invalid", async
 			document.documentElement.innerHTML = await (
 				await app.request("/about")
 			).text();
-			expect(
-				within(document.body).getByText("Kuvaa ei saatavilla"),
-			).toBeTruthy();
+			expect(within(document.body).getByText(m.coverMissing)).toBeTruthy();
 			expect(within(document.body).getByText("Teksti")).toBeTruthy();
 			expect(document.querySelector(".about-image img")).toBeNull();
 		}

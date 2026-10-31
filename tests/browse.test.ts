@@ -2,6 +2,7 @@ import { createClient } from "@libsql/client";
 import { within } from "@testing-library/dom";
 import { describe, expect, it } from "vitest";
 import { migrate } from "../src/db.js";
+import { messages as m } from "../src/i18n/fi.js";
 import { createTestApp as createApp } from "./helpers.js";
 
 describe("collection browsing", () => {
@@ -30,7 +31,7 @@ describe("collection browsing", () => {
 			).toBe("/posts/demo-27");
 			expect(
 				within(document.body)
-					.getByRole("link", { name: "Arkisto" })
+					.getByRole("link", { name: m.archive })
 					.getAttribute("href"),
 			).toBe("/archive");
 			for (const number of [1, 2]) {
@@ -51,7 +52,7 @@ describe("collection browsing", () => {
 				main.getAllByRole("heading", { level: 2 }).map((h) => h.textContent),
 			).toEqual(["Esimerkki 3", "Esimerkki 2", "Esimerkki 1"]);
 			expect(
-				main.getByRole("link", { name: "Uudemmat" }).getAttribute("href"),
+				main.getByRole("link", { name: m.newer }).getAttribute("href"),
 			).toBe("/archive?page=2");
 		} finally {
 			db.close();
@@ -66,9 +67,7 @@ it("explains an empty archive and rejects invalid page numbers without caching e
 		const app = createApp(db);
 		let response = await app.request("/archive");
 		document.documentElement.innerHTML = await response.text();
-		expect(
-			within(document.body).getByText("Julkaisuja ei vielä ole."),
-		).toBeTruthy();
+		expect(within(document.body).getByText(m.empty)).toBeTruthy();
 		for (const page of ["0", "-1", "abc", "1.5", "1000000"]) {
 			response = await app.request(`/archive?page=${page}`);
 			expect(response.status).toBe(400);
@@ -95,7 +94,7 @@ it("publishes canonical post URLs and a sitemap using the configured origin", as
 		).toBe("https://example.test/posts/demo");
 		expect(
 			within(document.body)
-				.getByRole("link", { name: "Takaisin arkistoon" })
+				.getByRole("link", { name: m.backArchive })
 				.getAttribute("href"),
 		).toBe("/archive?page=3");
 		const sitemap = await app.request("/sitemap.xml");
@@ -156,7 +155,7 @@ it("shows the first preview as a linked card and offers the complete archive", a
 			expect(image?.getAttribute("width")).toBe("640");
 			expect(image?.getAttribute("height")).toBe("427");
 			expect(image?.getAttribute("loading")).toBe("eager");
-			expect(link.closest("article")?.textContent).toContain("2 kuvaa");
+			expect(link.closest("article")?.textContent).toContain(m.imageCount(2));
 			const olderImage = within(document.body)
 				.getByRole("link", { name: "Vanhempi" })
 				.querySelector("img");
@@ -167,7 +166,7 @@ it("shows the first preview as a linked card and offers the complete archive", a
 		document.documentElement.innerHTML = await (await app.request("/")).text();
 		expect(
 			within(document.body)
-				.getByRole("link", { name: "Kaikki julkaisut" })
+				.getByRole("link", { name: m.allPosts })
 				.getAttribute("href"),
 		).toBe("/archive");
 	} finally {
@@ -190,7 +189,7 @@ it("continues with ordinary navigation after twenty accumulated archive batches"
 			await app.request("/archive?page=1&through=20")
 		).text();
 		const next = within(document.body).getByRole("link", {
-			name: "Seuraavat julkaisut",
+			name: m.nextPage,
 		});
 		expect(next.getAttribute("href")).toBe("/archive?page=21");
 		expect(next.getAttribute("data-enhance")).toBe("false");
@@ -199,7 +198,7 @@ it("continues with ordinary navigation after twenty accumulated archive batches"
 			await app.request("/archive?page=21")
 		).text();
 		expect(
-			within(document.body).getByText("Kaikki julkaisut näytetty.", {
+			within(document.body).getByText(m.archiveEnd, {
 				exact: true,
 			}),
 		).toBeTruthy();
@@ -235,14 +234,14 @@ it("reconstructs a bounded archive range and serves separate append fragments", 
 		).toBe("/posts/demo-27?page=1&through=2");
 		expect(
 			within(document.body)
-				.getByRole("link", { name: "Näytä lisää" })
+				.getByRole("link", { name: m.loadMore })
 				.getAttribute("href"),
 		).toBe("/archive?page=3");
 		const post = await app.request("/posts/demo-27?page=1&through=2");
 		document.documentElement.innerHTML = await post.text();
 		expect(
 			within(document.body)
-				.getByRole("link", { name: "Takaisin arkistoon" })
+				.getByRole("link", { name: m.backArchive })
 				.getAttribute("href"),
 		).toBe("/archive?page=1&through=2");
 		const fragment = await app.request("/archive/fragments?page=2&start=1");

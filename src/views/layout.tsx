@@ -24,7 +24,18 @@ export const Layout: FC<LayoutProps> = ({
 			<meta name="description" content={description || m.defaultDescription} />
 			<title>{title} | Klamydiakokoelma</title>
 			{canonical && <link rel="canonical" href={canonical} />}
-			<link rel="stylesheet" href="/assets/style-b5bccb7b.css" />
+			<link
+				rel="icon"
+				type="image/png"
+				sizes="32x32"
+				href="/assets/favicon-32-a3a55586.png"
+			/>
+			<link
+				rel="apple-touch-icon"
+				sizes="180x180"
+				href="/assets/favicon-180-90da7e65.png"
+			/>
+			<link rel="stylesheet" href="/assets/style-7fd264fd.css" />
 			<script src="/assets/images-cc5a7637.js" defer></script>
 			{gallery && <script src="/assets/gallery-d693c11e.js" defer></script>}
 			{archive && (

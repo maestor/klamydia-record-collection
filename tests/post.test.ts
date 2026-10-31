@@ -2,6 +2,7 @@ import { createClient } from "@libsql/client";
 import { within } from "@testing-library/dom";
 import { describe, expect, it } from "vitest";
 import { migrate } from "../src/db.js";
+import { messages as m } from "../src/i18n/fi.js";
 import { createTestApp as createApp } from "./helpers.js";
 
 describe("post page", () => {
@@ -118,17 +119,17 @@ it("shows a cleaned reading view while preserving the source description", async
 		expect(within(document.body).getByText("Punk")).toBeTruthy();
 		expect(
 			within(document.body)
-				.getByRole("link", { name: "Alkuperäinen julkaisu" })
+				.getByRole("link", { name: m.source })
 				.getAttribute("href"),
 		).toBe("https://www.instagram.com/p/test/");
 		expect(document.querySelector("details")).toBeNull();
 		const tags = within(document.body).getByRole("list", {
-			name: "Tunnisteet",
+			name: m.tags,
 		});
 		expect(within(tags).queryByRole("link")).toBeNull();
 		expect(
 			within(document.body)
-				.getByRole("link", { name: "Alkuperäinen julkaisu" })
+				.getByRole("link", { name: m.source })
 				.querySelector("svg")
 				?.getAttribute("aria-hidden"),
 		).toBe("true");
@@ -199,7 +200,7 @@ it("uses an honest per-image fallback without overwriting owner descriptions", a
 		).text();
 		expect(
 			within(document.body).getByRole("img", {
-				name: "Julkaisun Levyn nimi kuva 1 / 2",
+				name: m.galleryAlt("Levyn nimi", 1, 2),
 			}),
 		).toBeTruthy();
 		expect(
@@ -260,7 +261,7 @@ it("keeps unsafe media and source links out of the reading view", async () => {
 			await createApp(db).request("/posts/safe-links?page=2&through=1")
 		).text();
 		const page = within(document.body);
-		const image = page.getByRole("img", { name: "Julkaisun Levy kuva 1 / 1" });
+		const image = page.getByRole("img", { name: m.galleryAlt("Levy", 1, 1) });
 		expect(page.getAllByRole("img")).toHaveLength(1);
 		expect(image.getAttribute("src")).toBe(full);
 		expect(image.getAttribute("width")).toBe("320");
@@ -268,13 +269,9 @@ it("keeps unsafe media and source links out of the reading view", async () => {
 		expect(image.getAttribute("srcset")).toBeNull();
 		expect(image.closest("a")?.getAttribute("href")).toBe(full);
 		expect(image.closest("a")?.getAttribute("data-preview")).toBeNull();
+		expect(page.queryByRole("link", { name: m.source })).toBeNull();
 		expect(
-			page.queryByRole("link", { name: "Alkuperäinen julkaisu" }),
-		).toBeNull();
-		expect(
-			page
-				.getByRole("link", { name: "Takaisin arkistoon" })
-				.getAttribute("href"),
+			page.getByRole("link", { name: m.backArchive }).getAttribute("href"),
 		).toBe("/archive");
 	} finally {
 		db.close();

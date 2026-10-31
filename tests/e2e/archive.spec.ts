@@ -1,16 +1,19 @@
 import { expect, test } from "@playwright/test";
+import { messages as m } from "../../src/i18n/fi.js";
 
 test("loads more, opens a post, and restores the accumulated archive", async ({
 	page,
 }) => {
 	await page.goto("/archive");
-	await page.getByRole("link", { name: "Näytä lisää" }).click();
+	await page.getByRole("link", { name: m.loadMore }).click();
 	await expect(page).toHaveURL(/\/archive\?page=1&through=2$/);
 	await expect(page.locator(".post-card")).toHaveCount(24);
 	await expect(
 		page.getByRole("link", { name: "Esimerkkijulkaisu 15" }),
 	).toBeFocused();
-	await expect(page.getByRole("status")).toContainText("Lisätty 12 julkaisua");
+	await expect(page.getByRole("status")).toContainText(
+		m.archiveAddedTemplate.replace("{count}", "12"),
+	);
 	await page.reload();
 	await expect(page.locator(".post-card")).toHaveCount(24);
 	const target = page.getByRole("link", { name: "Esimerkkijulkaisu 05" });
@@ -23,12 +26,10 @@ test("loads more, opens a post, and restores the accumulated archive", async ({
 	await expect
 		.poll(() => page.evaluate(() => scrollY))
 		.toBeGreaterThan(before - 200);
-	await page.getByRole("link", { name: "Näytä lisää" }).click();
+	await page.getByRole("link", { name: m.loadMore }).click();
 	await expect(page.locator(".post-card")).toHaveCount(27);
-	await expect(page.getByRole("status")).toContainText(
-		"Kaikki julkaisut näytetty",
-	);
-	await expect(page.getByRole("link", { name: "Näytä lisää" })).toHaveCount(0);
+	await expect(page.getByRole("status")).toContainText(m.archiveEnd);
+	await expect(page.getByRole("link", { name: m.loadMore })).toHaveCount(0);
 });
 
 test("keeps results and offers retry and normal navigation when loading fails", async ({
@@ -40,15 +41,15 @@ test("keeps results and offers retry and normal navigation when loading fails", 
 		(route) => route.fulfill({ status: 503, body: "failure" }),
 		{ times: 1 },
 	);
-	await page.getByRole("link", { name: "Näytä lisää" }).click();
+	await page.getByRole("link", { name: m.loadMore }).click();
 	await expect(page.locator(".post-card")).toHaveCount(12);
 	await expect(page.getByRole("status")).toContainText(
 		"lataaminen epäonnistui",
 	);
 	await expect(
-		page.getByRole("link", { name: "Avaa seuraava sivu" }),
+		page.getByRole("link", { name: m.archiveFallback }),
 	).toHaveAttribute("href", "/archive?page=2");
-	await page.getByRole("link", { name: "Yritä uudelleen" }).click();
+	await page.getByRole("link", { name: m.archiveRetry }).click();
 	await expect(page.locator(".post-card")).toHaveCount(24);
 });
 
@@ -64,7 +65,7 @@ test("does not send duplicate requests while loading", async ({ page }) => {
 		await gate;
 		await route.continue();
 	});
-	const more = page.getByRole("link", { name: "Näytä lisää" });
+	const more = page.getByRole("link", { name: m.loadMore });
 	await more.click();
 	await expect(page.locator("#archive-results")).toHaveAttribute(
 		"aria-busy",
@@ -110,7 +111,7 @@ test("restores archive state using the post return link and browser Back between
 	page,
 }) => {
 	await page.goto("/archive");
-	await page.getByRole("link", { name: "Näytä lisää" }).click();
+	await page.getByRole("link", { name: m.loadMore }).click();
 	await expect(page.locator(".post-card")).toHaveCount(24);
 	await page.goBack();
 	await expect(page).toHaveURL(/\/archive$/);
@@ -122,7 +123,7 @@ test("restores archive state using the post return link and browser Back between
 	await target.scrollIntoViewIfNeeded();
 	const before = await page.evaluate(() => scrollY);
 	await target.click();
-	await page.getByRole("link", { name: "Takaisin arkistoon" }).click();
+	await page.getByRole("link", { name: m.backArchive }).click();
 	await expect(page.locator(".post-card")).toHaveCount(24);
 	await expect
 		.poll(() => page.evaluate(() => scrollY))
@@ -144,10 +145,8 @@ test("shows the end of the archive if the next batch becomes empty", async ({
 			body: "",
 		}),
 	);
-	await page.getByRole("link", { name: "Näytä lisää" }).click();
-	await expect(page.getByRole("status")).toHaveText(
-		"Kaikki julkaisut näytetty.",
-	);
+	await page.getByRole("link", { name: m.loadMore }).click();
+	await expect(page.getByRole("status")).toHaveText(m.archiveEnd);
 	await expect(page.locator(".post-card")).toHaveCount(12);
 });
 
@@ -191,15 +190,13 @@ test("loads the next batch when scrolling down without moving keyboard focus", a
 	try {
 		const page = await context.newPage();
 		await page.goto("/archive");
-		const home = page.getByRole("link", { name: "Klamydiakokoelma" });
+		const home = page.getByRole("link", { name: m.archiveLabel });
 		await home.focus();
 		await page.mouse.wheel(0, 30000);
 		await expect(page.locator(".post-card")).toHaveCount(24);
 		await expect(page).toHaveURL(/through=2/);
 		await expect(home).toBeFocused();
-		await expect(page.getByRole("link", { name: "Näytä lisää" })).toHaveCount(
-			1,
-		);
+		await expect(page.getByRole("link", { name: m.loadMore })).toHaveCount(1);
 	} finally {
 		await context.close();
 	}
@@ -217,14 +214,12 @@ test("automatic loading stops on error until the visitor retries", async ({
 			: route.continue();
 	});
 	await page.mouse.wheel(0, 30000);
-	await expect(
-		page.getByRole("link", { name: "Yritä uudelleen" }),
-	).toBeVisible();
+	await expect(page.getByRole("link", { name: m.archiveRetry })).toBeVisible();
 	await page.mouse.wheel(0, -300);
 	await page.mouse.wheel(0, 300);
 	await page.waitForTimeout(300);
 	expect(requests).toBe(1);
-	await page.getByRole("link", { name: "Yritä uudelleen" }).click();
+	await page.getByRole("link", { name: m.archiveRetry }).click();
 	await expect(page.locator(".post-card")).toHaveCount(24);
 });
 
@@ -260,7 +255,7 @@ test("automatic loading stops at the bounded range and leaves a normal continuat
 			await page.mouse.wheel(0, 1000000);
 			await expect(page.locator(".post-card")).toHaveCount(batch * 12);
 		}
-		const next = page.getByRole("link", { name: "Seuraavat julkaisut" });
+		const next = page.getByRole("link", { name: m.nextPage });
 		await expect(next).toHaveAttribute("href", "/archive?page=21");
 		await page.mouse.wheel(0, 1000000);
 		await page.waitForTimeout(300);
@@ -281,9 +276,7 @@ test("a downward touch scroll loads more on a phone", async ({ browser }) => {
 	try {
 		const page = await context.newPage();
 		await page.goto("/archive");
-		await page
-			.getByRole("link", { name: "Näytä lisää" })
-			.scrollIntoViewIfNeeded();
+		await page.getByRole("link", { name: m.loadMore }).scrollIntoViewIfNeeded();
 		const session = await context.newCDPSession(page);
 		await session.send("Input.dispatchTouchEvent", {
 			type: "touchStart",
@@ -313,20 +306,18 @@ test("keeps archive progress available to assistive technology without showing p
 		const page = await context.newPage();
 		await page.goto("/archive?page=1&through=3");
 		const status = page.getByRole("status");
-		await expect(status).toHaveText(/Sivut 1–3/);
+		await expect(status).toContainText(m.archiveProgress(1, 3, 27));
 		expect(
 			await status.evaluate((el) => el.getBoundingClientRect().width),
 		).toBeLessThanOrEqual(1);
 		await expect(page.locator("#archive-page-label")).toBeHidden();
 		await expect(
 			page.getByRole("navigation", {
-				name: "Arkiston sivut",
+				name: m.archivePages,
 				includeHidden: true,
 			}),
 		).toBeHidden();
-		await expect(
-			page.getByText("Kaikki julkaisut näytetty.", { exact: true }),
-		).toBeHidden();
+		await expect(page.getByText(m.archiveEnd, { exact: true })).toBeHidden();
 	} finally {
 		await context.close();
 	}
@@ -334,10 +325,8 @@ test("keeps archive progress available to assistive technology without showing p
 	try {
 		const page = await noScript.newPage();
 		await page.goto("/archive?page=3");
-		await expect(page.getByText("Sivu 3", { exact: true })).toBeVisible();
-		await expect(
-			page.getByText("Kaikki julkaisut näytetty.", { exact: true }),
-		).toBeVisible();
+		await expect(page.getByText(m.page(3), { exact: true })).toBeVisible();
+		await expect(page.getByText(m.archiveEnd, { exact: true })).toBeVisible();
 	} finally {
 		await noScript.close();
 	}
