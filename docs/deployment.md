@@ -65,7 +65,7 @@ After a workflow run exposes the migration check name, select it in Vercel. For 
 
 Other branches get Vercel previews. Set the same seven variables in **Preview** too. You can use the production read-only Turso token and R2 credentials to preview real collection content, or a separate, already migrated preview database. `SITE_URL` can stay at the final production origin for canonical links, or use a stable preview origin if you want preview-specific canonical links. Preview builds never run migrations. To initialize a separate preview database, run `npm run db:migrate` with its `DATABASE_URL` and write `DATABASE_AUTH_TOKEN` exported in your shell; the command does not load `.env`.
 
-Vercel serves `public/` directly through its CDN. The config preserves immutable caching and `nosniff` for content-hashed `/assets/` files; Hono applies HTML, error, signed-redirect and CSP policies. Preserve old hashed assets when publishing new versions. See [Vercel's Hono integration](https://vercel.com/docs/frameworks/backend/hono).
+Vercel serves `public/` directly through its CDN. The config preserves immutable caching and `nosniff` for content-hashed `/assets/` files; Hono applies HTML, error, signed-redirect and CSP policies. Preserve old hashed assets when publishing new versions; the optional manual cleanup and its risks are described in [development](development.md). See [Vercel's Hono integration](https://vercel.com/docs/frameworks/backend/hono).
 
 ## 3. GitHub Actions settings
 

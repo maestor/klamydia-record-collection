@@ -25,6 +25,7 @@
 		"test:e2e": "playwright test",
 		"test:production": "node --test tests/production.test.mjs",
 		"build": "tsc -p tsconfig.build.json",
+		"assets:clean": "node --conditions=development --import tsx scripts/run-cleanup-assets.ts",
 		"build:gallery": "node --conditions=development --import tsx scripts/build-gallery.ts",
 		"build:theme": "node --conditions=development --import tsx scripts/build-theme.ts",
 		"start": "node dist/server.js",
