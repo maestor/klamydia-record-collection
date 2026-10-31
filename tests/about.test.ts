@@ -83,9 +83,11 @@ it("presents the introduction as About and excludes it from browsing", async () 
 		expect(
 			page.getByRole("link", { name: m.followInstagram }).getAttribute("href"),
 		).toBe("https://www.instagram.com/klamydiakokoelma/");
-		expect(page.getByRole("link", { name: m.about }).getAttribute("href")).toBe(
-			"/about",
-		);
+		expect(
+			page
+				.getAllByRole("link", { name: m.about })
+				.map((link) => link.getAttribute("href")),
+		).toEqual(["/about", "/about"]);
 		expect(
 			document.querySelector("link[rel=canonical]")?.getAttribute("href"),
 		).toBe("https://example.test/about");

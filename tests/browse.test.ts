@@ -51,9 +51,9 @@ describe("collection browsing", () => {
 			).toBe("/posts/demo-27");
 			expect(
 				within(document.body)
-					.getByRole("link", { name: m.archive })
-					.getAttribute("href"),
-			).toBe("/archive");
+					.getAllByRole("link", { name: m.archive })
+					.map((link) => link.getAttribute("href")),
+			).toEqual(["/archive", "/archive"]);
 			for (const number of [1, 2]) {
 				const result = await app.request(`/archive?page=${number}`);
 				document.documentElement.innerHTML = await result.text();
