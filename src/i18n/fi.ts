@@ -5,6 +5,7 @@ export const locale = {
 } as const;
 export const messages = {
   home: "Etusivu",
+  homeTitle: "Klamydiakokoelma – Kattava taudinkuva Klamydia-orkesterin musiikkiäänitteiden muodossa",
   archive: "Arkisto",
   about: "Tietoa",
   aboutTitle: "Tietoa kokoelmasta",
@@ -54,7 +55,7 @@ export const messages = {
     `Julkaisun ${title} kuva ${index} / ${count}`,
   backArchive: "Takaisin arkistoon",
   source: "Alkuperäinen julkaisu",
-  defaultDescription: "Klamydiakokoelman julkaisuja.",
+  defaultDescription: "Klamydia-äänitekeräilijän levykokoelman esittely tarinoiden ja kuvien muodossa.",
   older: "Vanhemmat",
   loadMore: "Näytä lisää",
   nextPage: "Seuraavat julkaisut",
