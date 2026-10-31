@@ -47,6 +47,14 @@ it("shows the collection title and default description on the front page", async
 		).toBe(
 			"Klamydia-äänitekeräilijän levykokoelman esittely tarinoiden ja kuvien muodossa.",
 		);
+		expect(
+			Array.from(
+				document.querySelectorAll("head link[rel=stylesheet], head script"),
+			).map(
+				(element) =>
+					element.getAttribute("href") || element.getAttribute("src"),
+			),
+		).toEqual(["/assets/style.css", "/assets/theme.js", "/assets/images.js"]);
 	} finally {
 		db.close();
 	}
@@ -146,9 +154,9 @@ it("publishes canonical post URLs and a sitemap using the configured origin", as
 		).toBe("/archive?page=3");
 		const sitemap = await app.request("/sitemap.xml");
 		expect(sitemap.headers.get("content-type")).toContain("application/xml");
-		expect(await sitemap.text()).toContain(
-			"<loc>https://example.test/posts/demo</loc>",
-		);
+		const sitemapXml = await sitemap.text();
+		expect(sitemapXml).toContain('href="/assets/sitemap.css"');
+		expect(sitemapXml).toContain("<loc>https://example.test/posts/demo</loc>");
 	} finally {
 		db.close();
 	}

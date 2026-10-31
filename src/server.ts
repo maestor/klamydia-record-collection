@@ -1,5 +1,6 @@
 import { serve } from "@hono/node-server";
 import { serveStatic } from "@hono/node-server/serve-static";
+import { assetCacheControl } from "./middleware/asset-cache.js";
 import { createRuntime } from "./runtime.js";
 
 const { app, port } = await createRuntime(process.env);
@@ -8,7 +9,7 @@ app.get(
 	serveStatic({
 		root: "./public",
 		onFound: (_path, c) => {
-			c.header("Cache-Control", "public, max-age=31536000, immutable");
+			c.header("Cache-Control", assetCacheControl(c.req.path));
 		},
 	}),
 );

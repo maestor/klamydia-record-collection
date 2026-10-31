@@ -277,7 +277,7 @@ test("does not duplicate gallery controls after reload or history restoration", 
 	await page.goto("/posts/esimerkki");
 	await page.reload();
 	const script = await page
-		.locator('script[src*="/gallery-"]')
+		.locator('script[src="/assets/gallery.js"]')
 		.getAttribute("src");
 	if (!script) throw new Error("Gallery script is missing");
 	await page.addScriptTag({ url: script });
@@ -324,7 +324,7 @@ test("loads previews without downloading every original before opening the viewe
 test("preserves every full-image link if gallery initialization cannot load", async ({
 	page,
 }) => {
-	await page.route("**/assets/gallery-*.js", (route) => route.abort());
+	await page.route("**/assets/gallery.js", (route) => route.abort());
 	await page.goto("/posts/esimerkki");
 	await expect(
 		page.getByRole("link", { name: "Kuvitteellinen levykansi" }),

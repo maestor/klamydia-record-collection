@@ -27,6 +27,7 @@ it("redirects only published images to a short-lived private R2 URL without cach
 				`https://account.r2.cloudflarestorage.com/bucket/${key}?signature=temporary`,
 		});
 		app.get("/assets/example.css", (c) => c.text("body {}"));
+		app.get("/assets/style.css", (c) => c.text("body {}"));
 		const response = await app.request(image);
 		expect(response.status).toBe(302);
 		expect(response.headers.get("location")).toContain("?signature=temporary");
@@ -42,6 +43,9 @@ it("redirects only published images to a short-lived private R2 URL without cach
 		expect(asset.headers.get("cache-control")).toBe(
 			"public, max-age=31536000, immutable",
 		);
+		expect(
+			(await app.request("/assets/style.css")).headers.get("cache-control"),
+		).toBe("public, no-cache, must-revalidate");
 		const page = await app.request("/posts/post");
 		expect(page.headers.get("content-security-policy")).toContain(
 			"https://account.r2.cloudflarestorage.com",

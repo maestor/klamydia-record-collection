@@ -5,7 +5,27 @@
 	"buildCommand": "npm run build",
 	"headers": [
 		{
-			"source": "/assets/:path*",
+			"source": "/assets/:name(style|sitemap).css",
+			"headers": [
+				{
+					"key": "Cache-Control",
+					"value": "public, no-cache, must-revalidate"
+				},
+				{ "key": "X-Content-Type-Options", "value": "nosniff" }
+			]
+		},
+		{
+			"source": "/assets/:name(archive|images|theme|gallery).js",
+			"headers": [
+				{
+					"key": "Cache-Control",
+					"value": "public, no-cache, must-revalidate"
+				},
+				{ "key": "X-Content-Type-Options", "value": "nosniff" }
+			]
+		},
+		{
+			"source": "/assets/:name([a-z0-9-]+-[a-f0-9]{8}).:ext(js|css|png)",
 			"headers": [
 				{
 					"key": "Cache-Control",
