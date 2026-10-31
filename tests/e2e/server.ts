@@ -56,6 +56,13 @@ for (const post of fixtures) {
 		}
 	}
 }
+await db.execute("INSERT INTO tags VALUES ('punk', 'Punk')");
+for (const post of fixtures.slice(0, 14)) {
+	await db.execute({
+		sql: "INSERT INTO post_tags VALUES (?, ?)",
+		args: [post.slug, "punk"],
+	});
+}
 // Exercise a full album without adding another post to the archive fixtures.
 for (let position = 2; position <= 20; position++) {
 	const filename = `${createHash("sha256")

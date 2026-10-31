@@ -33,7 +33,12 @@ export type PostImage = {
 	height: number | null;
 };
 
-export async function listPosts(db: Client, limit: number, offset = 0) {
+export async function listPosts(
+	db: Client,
+	limit: number,
+	offset = 0,
+	tag?: string,
+) {
 	return (
 		await db.execute({
 			sql: `SELECT p.slug, p.title, p.published_at,
@@ -43,8 +48,9 @@ export async function listPosts(db: Client, limit: number, offset = 0) {
 			LEFT JOIN images i ON i.post_slug = p.slug AND i.position = (SELECT MIN(first.position) FROM images first WHERE first.post_slug = p.slug)
 			LEFT JOIN instagram_images ii ON ii.post_slug = i.post_slug AND ii.position = i.position
 			WHERE NOT EXISTS (SELECT 1 FROM instagram_posts ip WHERE ip.post_slug = p.slug AND ip.media_id = ?)
+			AND (? IS NULL OR EXISTS (SELECT 1 FROM post_tags pt WHERE pt.post_slug = p.slug AND pt.tag_normalized = ?))
 			ORDER BY p.published_at DESC, p.slug DESC LIMIT ? OFFSET ?`,
-			args: [ABOUT_MEDIA_ID, limit, offset],
+			args: [ABOUT_MEDIA_ID, tag ?? null, tag ?? null, limit, offset],
 		})
 	).rows.map(
 		(row): PostSummary => ({
@@ -98,10 +104,19 @@ export async function getImages(
 export async function getTags(db: Client, slug: string) {
 	return (
 		await db.execute({
-			sql: "SELECT t.display FROM tags t JOIN post_tags pt ON pt.tag_normalized = t.normalized WHERE pt.post_slug = ? ORDER BY t.normalized",
+			sql: "SELECT t.normalized, t.display FROM tags t JOIN post_tags pt ON pt.tag_normalized = t.normalized WHERE pt.post_slug = ? ORDER BY t.normalized",
 			args: [slug],
 		})
-	).rows.map((row) => String(row.display));
+	).rows
+		.map((row) => ({
+			normalized: String(row.normalized),
+			display: String(row.display),
+			count: Number(row.post_count),
+		}))
+		.sort(
+			(a, b) =>
+				b.count - a.count || a.display.localeCompare(b.display, "fi-FI"),
+		);
 }
 
 export async function getAboutPost(db: Client): Promise<AboutPost | undefined> {
@@ -127,4 +142,26 @@ export async function listPostSlugs(db: Client): Promise<string[]> {
 		args: [ABOUT_MEDIA_ID],
 	});
 	return posts.rows.map((row) => String(row.slug));
+}
+
+export async function listArchiveTags(db: Client) {
+	return (
+		await db.execute({
+			sql: `SELECT t.normalized, t.display, COUNT(*) AS post_count FROM tags t
+		JOIN post_tags pt ON pt.tag_normalized = t.normalized
+		JOIN posts p ON p.slug = pt.post_slug
+		WHERE NOT EXISTS (SELECT 1 FROM instagram_posts ip WHERE ip.post_slug = p.slug AND ip.media_id = ?)
+		GROUP BY t.normalized, t.display`,
+			args: [ABOUT_MEDIA_ID],
+		})
+	).rows
+		.map((row) => ({
+			normalized: String(row.normalized),
+			display: String(row.display),
+			count: Number(row.post_count),
+		}))
+		.sort(
+			(a, b) =>
+				b.count - a.count || a.display.localeCompare(b.display, "fi-FI"),
+		);
 }

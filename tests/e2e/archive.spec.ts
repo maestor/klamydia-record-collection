@@ -331,3 +331,34 @@ test("keeps archive progress available to assistive technology without showing p
 		await noScript.close();
 	}
 });
+
+test("filters by tag, loads matching posts, and returns to the filtered archive", async ({
+	page,
+}) => {
+	await page.goto("/archive");
+	await page.getByText("Hae aihetunnisteilla").click();
+	await page.getByRole("link", { name: "Punk (14)", exact: true }).click();
+	await expect(page).toHaveURL(/tag=punk/);
+	await expect(page.locator(".archive-tags details")).not.toHaveAttribute(
+		"open",
+		"",
+	);
+	await expect(page.getByText("Valittu aihetunniste:")).toBeVisible();
+	await expect(
+		page.getByRole("link", { name: "Poista aihetunniste Punk" }),
+	).toBeVisible();
+	await expect(page.locator("#archive-list > li")).toHaveCount(12);
+	await page.getByRole("link", { name: m.loadMore }).click();
+	await expect(page.locator("#archive-list > li")).toHaveCount(14);
+	await expect(page).toHaveURL(/through=2&tag=punk/);
+	await page.locator(".post-card-link").first().click();
+	await expect(
+		page.getByRole("link", { name: "Punk", exact: true }),
+	).toHaveAttribute("href", "/archive?tag=punk");
+	await page.getByRole("link", { name: m.backArchive }).click();
+	await expect(page).toHaveURL(/through=2&tag=punk/);
+	await expect(page.locator("#archive-list > li")).toHaveCount(14);
+	await page.getByRole("link", { name: "Poista aihetunniste Punk" }).click();
+	await expect(page).toHaveURL(/\/archive$/);
+	await expect(page.getByText("Valittu aihetunniste:")).toBeHidden();
+});

@@ -8,9 +8,15 @@ type PostItemsProps = {
 	posts: PostSummary[];
 	page?: number;
 	through?: number;
+	tag?: string;
 };
 
-export const PostItems: FC<PostItemsProps> = ({ posts, page, through }) => (
+export const PostItems: FC<PostItemsProps> = ({
+	posts,
+	page,
+	through,
+	tag,
+}) => (
 	<>
 		{posts.map((post, index) => {
 			const dimensions = previewDimensions(post.cover_width, post.cover_height);
@@ -19,7 +25,7 @@ export const PostItems: FC<PostItemsProps> = ({ posts, page, through }) => (
 					<article class="post-card">
 						<a
 							class="post-card-link"
-							href={`/posts/${encodeURIComponent(post.slug)}${archiveQuery(page, through)}`}
+							href={`/posts/${encodeURIComponent(post.slug)}${archiveQuery(page, through, tag)}`}
 						>
 							<div class="artwork">
 								<span class="artwork-placeholder" aria-hidden="true">
@@ -59,12 +65,13 @@ export const PostList: FC<PostItemsProps & { archive?: boolean }> = ({
 	posts,
 	page,
 	through,
+	tag,
 	archive,
 }) =>
 	posts.length ? (
 		<ul class="post-list" id={archive ? "archive-list" : undefined}>
-			<PostItems posts={posts} page={page} through={through} />
+			<PostItems posts={posts} page={page} through={through} tag={tag} />
 		</ul>
 	) : (
-		<p class="empty-state">{m.empty}</p>
+		<p class="empty-state">{tag ? m.emptyTag : m.empty}</p>
 	);

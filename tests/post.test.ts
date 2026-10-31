@@ -126,7 +126,9 @@ it("shows a cleaned reading view while preserving the source description", async
 		const tags = within(document.body).getByRole("list", {
 			name: m.tags,
 		});
-		expect(within(tags).queryByRole("link")).toBeNull();
+		expect(
+			within(tags).getByRole("link", { name: "Punk" }).getAttribute("href"),
+		).toBe("/archive?tag=punk");
 		expect(
 			within(document.body)
 				.getByRole("link", { name: m.source })

@@ -20,6 +20,10 @@ export const messages = {
   navigation: "Päävalikko",
   archivePages: "Arkiston sivut",
   tags: "Tunnisteet",
+  filterTags: "Hae aihetunnisteilla",
+  selectedTag: "Valittu aihetunniste:",
+  removeTag: (tag: string) => `Poista aihetunniste ${tag}`,
+  emptyTag: "Tällä aihetunnisteella ei löytynyt julkaisuja.",
   empty: "Julkaisuja ei vielä ole.",
   intro:
     "Tervetuloa kattavan Klamydia-orkesterin fyysisten äänitejulkaisujen kokoelman pariin. Selaile arkistoa tai yksittäisiä julkaisuja. Sisältö on tuotu Instagram-tililtä, johon sitä on dokumentoitu vuodesta 2023 alkaen.",

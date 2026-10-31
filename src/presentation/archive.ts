@@ -17,7 +17,12 @@ export function parseArchiveRange(
 		: null;
 }
 
-export function archiveQuery(page?: number, through?: number) {
-	if (!page || (page === 1 && (!through || through === 1))) return "";
-	return `?page=${page}${through && through > page ? `&through=${through}` : ""}`;
+export function archiveQuery(page?: number, through?: number, tag?: string) {
+	const parts: string[] = [];
+	if (page && (page !== 1 || (through && through > 1))) {
+		parts.push(`page=${page}`);
+		if (through && through > page) parts.push(`through=${through}`);
+	}
+	if (tag) parts.push(`tag=${encodeURIComponent(tag)}`);
+	return parts.length ? `?${parts.join("&")}` : "";
 }

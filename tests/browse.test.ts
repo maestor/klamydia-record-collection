@@ -288,3 +288,111 @@ it("reconstructs a bounded archive range and serves separate append fragments", 
 		db.close();
 	}
 });
+
+it("filters archive posts by tag and preserves the selection in navigation", async () => {
+	const db = createClient({ url: "file::memory:" });
+	try {
+		await migrate(db);
+		await db.execute(
+			"INSERT INTO tags VALUES ('punk rock', 'Punk Rock'), ('other', 'Other')",
+		);
+		for (let i = 1; i <= 14; i++) {
+			await db.execute({
+				sql: "INSERT INTO posts VALUES (?, ?, ?, ?)",
+				args: [
+					`tag-${i}`,
+					`Tagged ${i}`,
+					`2026-01-${String(i).padStart(2, "0")}`,
+					"Description",
+				],
+			});
+			await db.execute({
+				sql: "INSERT INTO post_tags VALUES (?, ?)",
+				args: [`tag-${i}`, i === 1 ? "other" : "punk rock"],
+			});
+		}
+		const app = createApp(db);
+		document.documentElement.innerHTML = await (
+			await app.request("/archive?tag=punk%20rock")
+		).text();
+		expect(
+			within(document.body).getByText("Hae aihetunnisteilla"),
+		).toBeTruthy();
+		expect(
+			within(document.body).queryByRole("link", { name: "Tagged 1" }),
+		).toBeNull();
+		expect(
+			within(document.body)
+				.getByRole("link", { name: m.loadMore })
+				.getAttribute("href"),
+		).toContain("tag=punk");
+		const post = within(document.body)
+			.getByRole("link", { name: "Tagged 14" })
+			.getAttribute("href");
+		document.documentElement.innerHTML = await (
+			await app.request(post ?? "")
+		).text();
+		expect(
+			within(document.body)
+				.getByRole("link", { name: m.backArchive })
+				.getAttribute("href"),
+		).toContain("tag=punk");
+		expect(
+			within(document.body)
+				.getByRole("link", { name: "Punk Rock" })
+				.getAttribute("href"),
+		).toContain("tag=punk");
+		const fragment = await app.request(
+			"/archive/fragments?page=2&start=1&tag=punk%20rock",
+		);
+		expect(await fragment.text()).toContain("Tagged 2");
+		document.documentElement.innerHTML = await (
+			await app.request("/archive?tag=missing")
+		).text();
+		expect(within(document.body).getByText(m.emptyTag)).toBeTruthy();
+		expect(
+			within(document.body)
+				.getByRole("link", { name: m.removeTag("missing") })
+				.getAttribute("href"),
+		).toBe("/archive");
+	} finally {
+		db.close();
+	}
+});
+
+it("shows tag counts in the archive, ordered by popularity then Finnish alphabet", async () => {
+	const db = createClient({ url: "file::memory:" });
+	try {
+		await migrate(db);
+		await db.execute(
+			"INSERT INTO tags VALUES ('a', 'Ääni'), ('b', 'Öljy'), ('c', 'Aalto')",
+		);
+		await db.execute(
+			"INSERT INTO posts VALUES ('one', 'One', '2026-01-01', ''), ('two', 'Two', '2026-01-02', '')",
+		);
+		await db.execute(
+			"INSERT INTO post_tags VALUES ('one', 'a'), ('one', 'b'), ('one', 'c'), ('two', 'b')",
+		);
+		const app = createApp(db);
+		document.documentElement.innerHTML = await (
+			await app.request("/archive")
+		).text();
+		const list = within(document.body).getByRole("list", {
+			name: m.tags,
+			hidden: true,
+		});
+		expect(
+			within(list)
+				.getAllByRole("link", { hidden: true })
+				.map((link) => link.textContent?.trim()),
+		).toEqual(["Öljy (2)", "Aalto (1)", "Ääni (1)"]);
+		document.documentElement.innerHTML = await (
+			await app.request("/posts/one")
+		).text();
+		expect(
+			within(document.body).getByRole("link", { name: "Öljy" }),
+		).toBeTruthy();
+	} finally {
+		db.close();
+	}
+});
