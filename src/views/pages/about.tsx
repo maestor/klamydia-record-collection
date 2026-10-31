@@ -2,6 +2,7 @@ import type { FC } from "hono/jsx";
 import { formatDate, messages as m } from "#i18n/fi";
 import { GitHubIcon } from "../components/github-icon.js";
 import { InstagramIcon } from "../components/instagram-icon.js";
+import { PageHeading } from "../components/page-heading.js";
 import { Layout } from "../layout.js";
 
 type AboutPageProps = {
@@ -25,8 +26,9 @@ export const AboutPage: FC<AboutPageProps> = ({
 		description={description.slice(0, 160)}
 	>
 		<article class="about-page">
-			<p class="eyebrow">Klamydiakokoelma</p>
-			<h1 class="page-title">{m.aboutTitle}</h1>
+			<PageHeading label={m.aboutLabel} titleClass="page-title">
+				{m.aboutTitle}
+			</PageHeading>
 			<p class="about-links">
 				<a
 					class="source-link"

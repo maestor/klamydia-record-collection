@@ -45,7 +45,7 @@ test("browses pages with keyboard and browser history without scripts", async ({
 		await page.goto("/");
 		await page.keyboard.press("Tab");
 		await expect(
-			page.getByRole("link", { name: m.archiveLabel }),
+			page.getByRole("link", { name: "Klamydiakokoelma" }),
 		).toBeFocused();
 		await page.getByRole("link", { name: "Esimerkkijulkaisu 27" }).click();
 		await expect(page).toHaveURL(/posts\/esimerkki-27$/);

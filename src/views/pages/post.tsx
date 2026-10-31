@@ -3,6 +3,7 @@ import { formatDate, messages as m } from "#i18n/fi";
 import type { GalleryImage } from "#presentation/gallery";
 import { Gallery } from "../components/gallery.js";
 import { InstagramIcon } from "../components/instagram-icon.js";
+import { PageHeading } from "../components/page-heading.js";
 import { Layout } from "../layout.js";
 
 type PostPageProps = {
@@ -33,8 +34,7 @@ export const PostPage: FC<PostPageProps> = ({
 		description={description.slice(0, 160)}
 	>
 		<article class="post-detail">
-			<p class="eyebrow">{m.postLabel}</p>
-			<h1>{title}</h1>
+			<PageHeading label={m.postLabel}>{title}</PageHeading>
 			<time dateTime={publishedAt}>{formatDate(publishedAt)}</time>
 			<h2 class="section-title" id="gallery-heading">
 				{m.images}

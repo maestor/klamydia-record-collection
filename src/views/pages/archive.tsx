@@ -2,6 +2,7 @@ import type { FC } from "hono/jsx";
 import { messages as m } from "#i18n/fi";
 import { ARCHIVE_BATCH_LIMIT } from "#presentation/archive";
 import type { PostSummary } from "#repositories/posts";
+import { PageHeading } from "../components/page-heading.js";
 import { PostList } from "../components/post-list.js";
 import { Layout } from "../layout.js";
 
@@ -23,8 +24,9 @@ export const ArchivePage: FC<ArchivePageProps> = ({
 	const canAppend = end - start < ARCHIVE_BATCH_LIMIT - 1;
 	return (
 		<Layout archive title={m.archive} canonical={canonical}>
-			<p class="eyebrow">{m.archiveLabel}</p>
-			<h1 class="page-title">{m.archive}</h1>
+			<PageHeading label={m.archiveLabel} titleClass="page-title">
+				{m.archive}
+			</PageHeading>
 			<section
 				id="archive-results"
 				aria-label={m.archive}
