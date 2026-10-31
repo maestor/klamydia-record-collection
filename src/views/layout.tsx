@@ -1,6 +1,7 @@
-import { html } from "hono/html";
+import { html, raw } from "hono/html";
 import type { FC, PropsWithChildren } from "hono/jsx";
 import { locale, messages as m } from "#i18n/fi";
+import { themeBootstrap } from "#presentation/theme";
 
 type LayoutProps = PropsWithChildren<{
 	title: string;
@@ -43,8 +44,9 @@ export const Layout: FC<LayoutProps> = ({
 					sizes="180x180"
 					href="/assets/favicon-180-90da7e65.png"
 				/>
+				<script>{raw(themeBootstrap)}</script>
 				<link rel="stylesheet" href="/assets/style.css" />
-				<script src="/assets/theme.js"></script>
+				<script src="/assets/theme.js" defer></script>
 				<script src="/assets/images.js" defer></script>
 				{gallery && <script src="/assets/gallery.js" defer></script>}
 				{archive && (

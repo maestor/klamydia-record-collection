@@ -3,6 +3,7 @@ import { within } from "@testing-library/dom";
 import { describe, expect, it } from "vitest";
 import { migrate } from "../src/db.js";
 import { messages as m } from "../src/i18n/fi.js";
+import { themeBootstrap } from "../src/presentation/theme.js";
 import { createTestApp as createApp } from "./helpers.js";
 
 describe("post page", () => {
@@ -69,7 +70,9 @@ describe("public response protections", () => {
 			expect(document.querySelector("h1 script")).toBeNull();
 			expect(
 				[...document.querySelectorAll("script")].every(
-					(script) => script.src && !script.textContent,
+					(script) =>
+						(script.src && !script.textContent) ||
+						(!script.src && script.textContent === themeBootstrap),
 				),
 			).toBe(true);
 			expect(document.querySelector("h1")?.textContent).toBe(

@@ -1,9 +1,100 @@
+import { createHash } from "node:crypto";
 import { createClient } from "@libsql/client";
 import sharp from "sharp";
 import { expect, it } from "vitest";
 import { migrate } from "../src/db.js";
 import { importInstagram } from "../src/instagram-import.js";
 import { createTestApp as createApp } from "./helpers.js";
+
+it("publishes smaller content-hashed previews while retaining the full image", async () => {
+	const db = createClient({ url: "file::memory:" });
+	const objects = new Map<string, Buffer>();
+	try {
+		await migrate(db);
+		// Reproducible texture and gradients exercise compression beyond solid-color fixtures.
+		const width = 1200;
+		const height = 970;
+		const pixels = Buffer.alloc(width * height * 3);
+		let seed = 42;
+		for (let y = 0; y < height; y++) {
+			for (let x = 0; x < width; x++) {
+				seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+				const texture = (seed >>> 24) / 8;
+				const offset = (y * width + x) * 3;
+				pixels[offset] = (x / width) * 220 + texture;
+				pixels[offset + 1] = (y / height) * 220 + texture;
+				pixels[offset + 2] = ((x + y) % 200) + texture;
+			}
+		}
+		const input = await sharp(pixels, { raw: { width, height, channels: 3 } })
+			.png()
+			.toBuffer();
+		await importInstagram({
+			db,
+			accountId: "123",
+			token: "token",
+			putImage: async (name, bytes) => {
+				objects.set(name, bytes);
+			},
+			fetcher: async (url) =>
+				String(url).startsWith("https://images.fbcdn.net/")
+					? new Response(input)
+					: Response.json({
+							data: [
+								{
+									id: "1",
+									timestamp: "2024-01-01T00:00:00Z",
+									media_type: "IMAGE",
+									caption: "Levy",
+									permalink: "https://www.instagram.com/p/test/",
+									media_url: "https://images.fbcdn.net/cover",
+								},
+							],
+						}),
+		});
+		const row = (
+			await db.execute(
+				"SELECT images.url, instagram_images.preview_url FROM images JOIN instagram_images USING(post_slug, position)",
+			)
+		).rows[0];
+		const full = objects.get(String(row.url).slice("/media/".length)) as Buffer;
+		const preview = objects.get(
+			String(row.preview_url).slice("/media/".length),
+		) as Buffer;
+		const legacyPreview = await sharp(full)
+			.resize({
+				width: 640,
+				height: 640,
+				fit: "inside",
+				withoutEnlargement: true,
+			})
+			.jpeg({ quality: 85 })
+			.toBuffer();
+		expect(preview.length).toBeLessThan(legacyPreview.length * 0.85);
+		expect(await sharp(preview).metadata()).toMatchObject({
+			width: 640,
+			height: 517,
+			format: "jpeg",
+		});
+		expect(row.preview_url).toBe(
+			`/media/${createHash("sha256").update(preview).digest("hex")}.jpg`,
+		);
+		expect(full).toEqual(
+			await sharp(input)
+				.rotate()
+				.resize({
+					width: 1440,
+					height: 1440,
+					fit: "inside",
+					withoutEnlargement: true,
+				})
+				.jpeg({ quality: 90 })
+				.toBuffer(),
+		);
+	} finally {
+		db.close();
+	}
+});
 
 it("refuses an import without a configured media store before fetching Instagram data", async () => {
 	const db = createClient({ url: "file::memory:" });

@@ -9,6 +9,7 @@ type PostItemsProps = {
 	page?: number;
 	through?: number;
 	tag?: string;
+	prioritizeFirst?: boolean;
 };
 
 export const PostItems: FC<PostItemsProps> = ({
@@ -16,6 +17,7 @@ export const PostItems: FC<PostItemsProps> = ({
 	page,
 	through,
 	tag,
+	prioritizeFirst = false,
 }) => (
 	<>
 		{posts.map((post, index) => {
@@ -38,7 +40,10 @@ export const PostItems: FC<PostItemsProps> = ({
 										alt=""
 										width={dimensions.width}
 										height={dimensions.height}
-										loading={index === 0 ? "eager" : "lazy"}
+										loading={prioritizeFirst && index === 0 ? "eager" : "lazy"}
+										fetchpriority={
+											prioritizeFirst && index === 0 ? "high" : undefined
+										}
 									/>
 								)}
 							</div>
@@ -61,16 +66,18 @@ export const PostItems: FC<PostItemsProps> = ({
 	</>
 );
 
-export const PostList: FC<PostItemsProps & { archive?: boolean }> = ({
-	posts,
-	page,
-	through,
-	tag,
-	archive,
-}) =>
+export const PostList: FC<
+	Omit<PostItemsProps, "prioritizeFirst"> & { archive?: boolean }
+> = ({ posts, page, through, tag, archive }) =>
 	posts.length ? (
 		<ul class="post-list" id={archive ? "archive-list" : undefined}>
-			<PostItems posts={posts} page={page} through={through} tag={tag} />
+			<PostItems
+				posts={posts}
+				page={page}
+				through={through}
+				tag={tag}
+				prioritizeFirst
+			/>
 		</ul>
 	) : (
 		<p class="empty-state">{tag ? m.emptyTag : m.empty}</p>

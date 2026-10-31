@@ -1,4 +1,5 @@
 import { createMiddleware } from "hono/factory";
+import { themeBootstrapHash } from "#presentation/theme";
 import { assetCacheControl } from "./asset-cache.js";
 
 export function responsePolicy(mediaEndpoint: string) {
@@ -6,7 +7,7 @@ export function responsePolicy(mediaEndpoint: string) {
 		await next();
 		c.header(
 			"Content-Security-Policy",
-			`default-src 'none'; img-src 'self' ${mediaEndpoint}; style-src 'self'; script-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'`,
+			`default-src 'none'; img-src 'self' ${mediaEndpoint}; style-src 'self'; script-src 'self' '${themeBootstrapHash}'; connect-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'`,
 		);
 		c.header("X-Content-Type-Options", "nosniff");
 		c.header("Referrer-Policy", "strict-origin-when-cross-origin");
