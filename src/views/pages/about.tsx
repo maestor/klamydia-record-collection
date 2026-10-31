@@ -35,16 +35,18 @@ export const AboutPage: FC<AboutPageProps> = ({
 					<InstagramIcon />
 					{m.followInstagram}
 				</a>
-				<span class="about-link-divider" aria-hidden="true">
-					•
+				<span class="about-github-group">
+					<span class="about-link-divider" aria-hidden="true">
+						•
+					</span>
+					<a
+						class="source-link"
+						href="https://github.com/maestor/klamydia-record-collection"
+					>
+						<GitHubIcon />
+						{m.siteImplementation}
+					</a>
 				</span>
-				<a
-					class="source-link"
-					href="https://github.com/maestor/klamydia-record-collection"
-				>
-					<GitHubIcon />
-					{m.siteImplementation}
-				</a>
 			</p>
 			<div class="about-content">
 				{available && (

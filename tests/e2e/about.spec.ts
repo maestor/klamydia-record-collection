@@ -46,6 +46,7 @@ test("the About page is reachable by keyboard and readable without scripts", asy
 
 test("About has an accessible responsive layout", async ({ page }) => {
 	for (const [width, height] of [
+		[320, 700],
 		[390, 844],
 		[1440, 900],
 	] as const) {
@@ -62,7 +63,15 @@ test("About has an accessible responsive layout", async ({ page }) => {
 			.boundingBox();
 		expect(instagramBox).not.toBeNull();
 		expect(githubBox).not.toBeNull();
-		expect(githubBox?.y).toBe(instagramBox?.y);
+		if (width === 1440) expect(githubBox?.y).toBe(instagramBox?.y);
+		const divider = await page.locator(".about-link-divider").boundingBox();
+		expect(divider).not.toBeNull();
+		if (!divider || !githubBox) throw new Error("Link content missing");
+		expect(divider.y + divider.height / 2).toBeCloseTo(
+			githubBox.y + githubBox.height / 2,
+			0,
+		);
+		expect(divider.x + divider.width).toBeLessThan(githubBox.x);
 		const imageBox = await page
 			.getByRole("img", { name: m.aboutImageAlt })
 			.boundingBox();
