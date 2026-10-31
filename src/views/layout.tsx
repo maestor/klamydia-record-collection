@@ -41,13 +41,13 @@ export const Layout: FC<LayoutProps> = ({
 					sizes="180x180"
 					href="/assets/favicon-180-90da7e65.png"
 				/>
-				<link rel="stylesheet" href="/assets/style-d83a591b.css" />
+				<link rel="stylesheet" href="/assets/style-b5ffff8f.css" />
 				<script src="/assets/images-cc5a7637.js" defer></script>
 				{gallery && <script src="/assets/gallery-d693c11e.js" defer></script>}
 				{archive && (
 					<>
 						<script src="/assets/htmx-d6fdc75f.js" defer></script>
-						<script src="/assets/archive-7e74fb84.js" defer></script>
+						<script src="/assets/archive-b0bbbe3f.js" defer></script>
 					</>
 				)}
 			</head>

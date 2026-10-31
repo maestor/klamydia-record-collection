@@ -71,7 +71,7 @@ export function createPostRoutes(db: Client, siteUrl: string) {
 				sourceUrl={sourceUrl}
 				backHref={
 					context
-						? `/archive${archiveQuery(context.start, context.end)}`
+						? `/archive${archiveQuery(context.start, context.end, c.req.query("tag") || undefined)}`
 						: "/archive"
 				}
 			/>,

@@ -7,7 +7,7 @@ import {
 	isValidPage,
 	parseArchiveRange,
 } from "#presentation/archive";
-import { listPosts } from "#repositories/posts";
+import { listArchiveTags, listPosts } from "#repositories/posts";
 import { PostItems } from "#views/components/post-list";
 import { ArchivePage } from "#views/pages/archive";
 import { HomePage } from "#views/pages/home";
@@ -30,7 +30,13 @@ export function createCollectionRoutes(db: Client, siteUrl: string) {
 		const page = Number(rawPage);
 		if (page <= start || page - start >= ARCHIVE_BATCH_LIMIT)
 			return c.text(m.invalidPage, 400);
-		const rows = await listPosts(db, PAGE_SIZE + 1, (page - 1) * PAGE_SIZE);
+		const tag = c.req.query("tag") || undefined;
+		const rows = await listPosts(
+			db,
+			PAGE_SIZE + 1,
+			(page - 1) * PAGE_SIZE,
+			tag,
+		);
 		c.header("X-Archive-Count", String(Math.min(rows.length, PAGE_SIZE)));
 		c.header("X-Archive-Has-More", String(rows.length > PAGE_SIZE));
 		return c.html(
@@ -38,6 +44,7 @@ export function createCollectionRoutes(db: Client, siteUrl: string) {
 				posts={rows.slice(0, PAGE_SIZE)}
 				page={start}
 				through={page}
+				tag={tag}
 			/>,
 		);
 	});
@@ -53,14 +60,20 @@ export function createCollectionRoutes(db: Client, siteUrl: string) {
 			);
 		const { start, end } = selection;
 		const limit = (end - start + 1) * PAGE_SIZE;
-		const posts = await listPosts(db, limit + 1, (start - 1) * PAGE_SIZE);
+		const tag = c.req.query("tag") || undefined;
+		const [posts, tags] = await Promise.all([
+			listPosts(db, limit + 1, (start - 1) * PAGE_SIZE, tag),
+			listArchiveTags(db),
+		]);
 		return c.html(
 			<ArchivePage
 				posts={posts.slice(0, limit)}
+				tag={tag}
+				tags={tags}
 				start={start}
 				end={end}
 				hasMore={posts.length > limit && end < 999999}
-				canonical={`${siteUrl}/archive${archiveQuery(start, end)}`}
+				canonical={`${siteUrl}/archive${archiveQuery(start, end, tag)}`}
 			/>,
 		);
 	});

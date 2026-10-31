@@ -1,5 +1,6 @@
 import type { FC } from "hono/jsx";
 import { formatDate, messages as m } from "#i18n/fi";
+import { archiveQuery } from "#presentation/archive";
 import type { GalleryImage } from "#presentation/gallery";
 import { Gallery } from "../components/gallery.js";
 import { InstagramIcon } from "../components/instagram-icon.js";
@@ -12,7 +13,7 @@ type PostPageProps = {
 	description: string;
 	canonical: string;
 	images: GalleryImage[];
-	tags: string[];
+	tags: { normalized: string; display: string }[];
 	sourceUrl?: string;
 	backHref: string;
 };
@@ -44,7 +45,13 @@ export const PostPage: FC<PostPageProps> = ({
 			{tags.length > 0 && (
 				<ul class="tags" aria-label={m.tags}>
 					{tags.map((tag) => (
-						<li>{tag}</li>
+						<li>
+							<a
+								href={`/archive${archiveQuery(undefined, undefined, tag.normalized)}`}
+							>
+								{tag.display}
+							</a>
+						</li>
 					))}
 				</ul>
 			)}
