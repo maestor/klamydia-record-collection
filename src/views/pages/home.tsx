@@ -9,7 +9,7 @@ export const HomePage: FC<{ posts: PostSummary[]; canonical: string }> = ({
 	posts,
 	canonical,
 }) => (
-	<Layout title={m.home} canonical={canonical}>
+	<Layout title={m.home} fullTitle={m.homeTitle} canonical={canonical}>
 		<section class="intro">
 			<PageHeading label={m.introLabel}>
 				Klamydia

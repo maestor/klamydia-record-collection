@@ -4,6 +4,7 @@ import { locale, messages as m } from "#i18n/fi";
 
 type LayoutProps = PropsWithChildren<{
 	title: string;
+	fullTitle?: string;
 	canonical?: string;
 	description?: string;
 	archive?: boolean;
@@ -12,6 +13,7 @@ type LayoutProps = PropsWithChildren<{
 
 export const Layout: FC<LayoutProps> = ({
 	title,
+	fullTitle,
 	canonical,
 	description,
 	archive,
@@ -28,7 +30,7 @@ export const Layout: FC<LayoutProps> = ({
 					name="description"
 					content={description || m.defaultDescription}
 				/>
-				<title>{title} | Klamydiakokoelma</title>
+				<title>{fullTitle || `${title} | Klamydiakokoelma`}</title>
 				{canonical && <link rel="canonical" href={canonical} />}
 				<link
 					rel="icon"

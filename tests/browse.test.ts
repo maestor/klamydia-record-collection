@@ -25,6 +25,33 @@ it("serves full HTML documents in standards mode", async () => {
 	}
 });
 
+it("shows the collection title and default description on the front page", async () => {
+	const db = createClient({ url: "file::memory:" });
+	try {
+		await migrate(db);
+		const response = await createApp(db).request("/");
+		document.documentElement.innerHTML = await response.text();
+		expect(document.title).toBe(
+			"Klamydiakokoelma – Kattava taudinkuva Klamydia-orkesterin musiikkiäänitteiden muodossa",
+		);
+		expect(
+			within(document.body).getByRole("heading", {
+				level: 1,
+				name: "Klamydiakokoelma",
+			}),
+		).toBeTruthy();
+		expect(
+			document
+				.querySelector('meta[name="description"]')
+				?.getAttribute("content"),
+		).toBe(
+			"Klamydia-äänitekeräilijän levykokoelman esittely tarinoiden ja kuvien muodossa.",
+		);
+	} finally {
+		db.close();
+	}
+});
+
 describe("collection browsing", () => {
 	it("shows recent posts and paginates the archive newest first", async () => {
 		const db = createClient({ url: "file::memory:" });
