@@ -401,3 +401,31 @@ test("focuses the selected tag without JavaScript", async ({ browser }) => {
 		await context.close();
 	}
 });
+
+test("animates tag disclosure when opened and closed with a pointer", async ({
+	page,
+}) => {
+	await page.goto("/archive");
+	const summary = page.locator(".archive-tags summary");
+	const details = page.locator(".archive-tags details");
+	await details.locator(".tags").evaluate((list) => {
+		const tag = list.firstElementChild;
+		if (!tag) throw new Error("Tag fixture missing");
+		for (let index = 0; index < 40; index++) list.append(tag.cloneNode(true));
+	});
+	await summary.focus();
+	const size = () =>
+		details.evaluate((element) =>
+			parseFloat(getComputedStyle(element, "::details-content").blockSize),
+		);
+	await summary.click();
+	const opening = await size();
+	await expect.poll(size).toBeGreaterThan(opening);
+	await expect.poll(size).toBeGreaterThan(100);
+	await page.waitForTimeout(600);
+	const expanded = await size();
+	await summary.click();
+	const closing = await size();
+	await expect.poll(size).toBeLessThan(closing);
+	expect(closing).toBeGreaterThan(expanded / 2);
+});

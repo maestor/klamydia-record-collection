@@ -12,7 +12,6 @@ export const Gallery: FC<{ images: GalleryImage[] }> = ({ images }) => (
 		data-thumbnail={m.galleryThumbnail}
 		data-pagination={m.galleryPagination}
 		data-thumbnails={m.galleryThumbnails}
-		data-toggle-thumbnails={m.galleryToggleThumbnails}
 		data-dialog={m.galleryDialog}
 		data-enlarge={m.galleryEnlarge}
 		data-close={m.galleryClose}

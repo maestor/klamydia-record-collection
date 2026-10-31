@@ -55,8 +55,46 @@
 	status.setAttribute("aria-live", "polite");
 	status.setAttribute("aria-atomic", "true");
 	const update = (index: number) => {
+		const nextIndex = (index + slides.length) % slides.length;
+		if (
+			nextIndex !== current &&
+			!matchMedia("(prefers-reduced-motion: reduce)").matches
+		) {
+			const direction = index > current ? 1 : -1;
+			const outgoing = slides[current].cloneNode(true) as HTMLElement;
+			outgoing.setAttribute("aria-hidden", "true");
+			outgoing.inert = true;
+			outgoing.classList.add("gallery-outgoing");
+			slideList.querySelectorAll(".gallery-outgoing").forEach((slide) => {
+				slide.remove();
+			});
+			slideList.append(outgoing);
+			const timing = { duration: 300, easing: "ease-in-out" };
+			outgoing
+				.animate(
+					[
+						{ transform: "translateX(0)" },
+						{ transform: `translateX(${-direction * 100}%)` },
+					],
+					timing,
+				)
+				.finished.then(
+					() => outgoing.remove(),
+					() => outgoing.remove(),
+				);
+			slides[nextIndex].getAnimations().forEach((animation) => {
+				animation.cancel();
+			});
+			slides[nextIndex].animate(
+				[
+					{ transform: `translateX(${direction * 100}%)` },
+					{ transform: "translateX(0)" },
+				],
+				timing,
+			);
+		}
 		const moveFocus = slides[current].contains(document.activeElement);
-		current = (index + slides.length) % slides.length;
+		current = nextIndex;
 		slides.forEach((slide, position) => {
 			slide.hidden = position !== current;
 		});
@@ -82,22 +120,8 @@
 		pagination.setAttribute("aria-label", data.pagination ?? "");
 		const strip = document.createElement("div");
 		strip.className = "gallery-thumbnails";
-		strip.id = "gallery-thumbnails";
-		strip.hidden = true;
 		strip.setAttribute("role", "group");
 		strip.setAttribute("aria-label", data.thumbnails ?? "");
-		const toggle = iconButton(
-			data.toggleThumbnails ?? "",
-			"M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z",
-		);
-		toggle.classList.add("gallery-toggle");
-		toggle.setAttribute("aria-controls", strip.id);
-		toggle.setAttribute("aria-expanded", "false");
-		toggle.addEventListener("click", () => {
-			strip.hidden = !strip.hidden;
-			toggle.setAttribute("aria-expanded", String(!strip.hidden));
-		});
-		stage.append(toggle);
 		links.forEach((link, index) => {
 			if (!link) return;
 			const dot = button("");
@@ -209,7 +233,6 @@
 			close.focus();
 		});
 		dialog.addEventListener("close", () => {
-			image.removeAttribute("src");
 			opener?.focus();
 		});
 		dialog.append(close, image, error);
