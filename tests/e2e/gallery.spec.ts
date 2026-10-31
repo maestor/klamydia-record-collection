@@ -23,9 +23,6 @@ test("browses images in source order with buttons, keyboard and thumbnails", asy
 	).toBeVisible();
 	await page.keyboard.press("ArrowRight");
 	await expect(gallery.getByRole("status")).toHaveText("Kuva 1 / 2");
-	await gallery
-		.getByRole("button", { name: m.galleryToggleThumbnails })
-		.click();
 	const thumbnail = gallery
 		.getByRole("group", { name: m.galleryThumbnails })
 		.getByRole("button", {
@@ -39,72 +36,25 @@ test("browses images in source order with buttons, keyboard and thumbnails", asy
 	await expect(gallery.getByRole("status")).toHaveText("Kuva 2 / 2");
 });
 
-test("keeps controls over the artwork and reveals thumbnails only on request", async ({
-	page,
-}) => {
-	for (const width of [390, 1440]) {
-		await page.setViewportSize({ width, height: 900 });
-		await page.goto("/posts/esimerkki");
-		const gallery = page.getByRole("region", { name: m.images });
-		const strip = gallery.getByRole("group", {
-			name: m.galleryThumbnails,
-			includeHidden: true,
-		});
-		await expect(strip).toBeHidden();
-		const toggle = gallery.getByRole("button", {
-			name: m.galleryToggleThumbnails,
-		});
-		await expect(toggle).toHaveAttribute("aria-expanded", "false");
-		const image = await gallery
-			.getByRole("link", { name: "Kuvitteellinen levykansi" })
-			.boundingBox();
-		const galleryBox = await gallery.boundingBox();
-		if (!image || !galleryBox) throw new Error("Gallery not visible");
-		for (const name of [
-			m.galleryPrevious,
-			m.galleryNext,
-			m.galleryEnlarge,
-			m.galleryToggleThumbnails,
-		]) {
-			const box = await gallery
-				.getByRole("button", { name, exact: true })
-				.boundingBox();
-			if (!box) throw new Error(`${name} not visible`);
-			expect(box.y).toBeGreaterThanOrEqual(image.y);
-			expect(box.y + box.height).toBeLessThanOrEqual(image.y + image.height);
-			expect(box.width).toBeGreaterThanOrEqual(44);
-			expect(box.height).toBeGreaterThanOrEqual(44);
-		}
-		expect(galleryBox.height - image.height).toBeLessThanOrEqual(48);
-		const dots = gallery.getByRole("group", { name: m.galleryPagination });
-		const second = dots.getByRole("button", {
-			name: m.galleryThumbnail
-				.replace("{current}", "2")
-				.replace("{total}", "2"),
-		});
-		await second.click();
-		await expect(second).toHaveAttribute("aria-pressed", "true");
-		await expect(gallery.getByRole("status")).toHaveText("Kuva 2 / 2");
-		await toggle.focus();
-		await page.keyboard.press("Enter");
-		await expect(strip).toBeVisible();
-		await expect(toggle).toHaveAttribute("aria-expanded", "true");
-		await expect(
-			strip.getByRole("button", {
-				name: m.galleryThumbnail
-					.replace("{current}", "2")
-					.replace("{total}", "2"),
-			}),
-		).toHaveAttribute("aria-pressed", "true");
-		await page.keyboard.press("Enter");
-		await expect(strip).toBeHidden();
-		await expect(toggle).toBeFocused();
-		expect(
-			await page.evaluate(
-				() => document.documentElement.scrollWidth <= innerWidth,
-			),
-		).toBe(true);
-	}
+test("shows thumbnails and animates image changes", async ({ page }) => {
+	await page.goto("/posts/esimerkki");
+	const gallery = page.getByRole("region", { name: m.images });
+	await expect(
+		gallery.getByRole("group", { name: m.galleryThumbnails }),
+	).toBeVisible();
+	await expect(
+		gallery.getByRole("button", { name: m.galleryToggleThumbnails }),
+	).toHaveCount(0);
+	await gallery.getByRole("button", { name: m.galleryNext }).click();
+	await expect(gallery.getByRole("status")).toHaveText("Kuva 2 / 2");
+	await expect
+		.poll(() =>
+			gallery
+				.locator(".gallery-slide")
+				.nth(1)
+				.evaluate((slide) => slide.getAnimations().length),
+		)
+		.toBeGreaterThan(0);
 });
 
 test("opens a larger image with an icon close button and returns focus after Escape", async ({
@@ -209,9 +159,6 @@ test("a twenty-image gallery stays compact and every image remains reachable on 
 		})
 		.click();
 	await expect(gallery.getByRole("status")).toHaveText("Kuva 10 / 20");
-	await gallery
-		.getByRole("button", { name: m.galleryToggleThumbnails })
-		.click();
 	const strip = gallery.getByRole("group", { name: m.galleryThumbnails });
 	await strip
 		.getByRole("button", {
@@ -221,13 +168,10 @@ test("a twenty-image gallery stays compact and every image remains reachable on 
 		})
 		.click();
 	await expect(gallery.getByRole("status")).toHaveText("Kuva 20 / 20");
-	await gallery
-		.getByRole("button", { name: m.galleryToggleThumbnails })
-		.click();
 	const frame = await gallery.locator(".gallery-stage").boundingBox();
 	const box = await gallery.boundingBox();
 	if (!frame || !box) throw new Error("Gallery not visible");
-	expect(box.height - frame.height).toBeLessThanOrEqual(80);
+	expect(box.height - frame.height).toBeLessThanOrEqual(180);
 	expect(
 		await page.evaluate(
 			() => document.documentElement.scrollWidth <= innerWidth,

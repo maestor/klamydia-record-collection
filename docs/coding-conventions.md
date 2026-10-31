@@ -43,6 +43,8 @@ Use Finnish messages and date formatting from `src/i18n/fi.ts`. Render imported 
 
 Use links for navigation, buttons for actions, meaningful headings, accessible control names, and deliberate focus behavior. Keep status announcements and image alternatives intact. Existing classes, IDs, and `data-*` attributes used by CSS or controllers are contracts: update their consumers and behavioral tests together when changing them. Preserve full-image links and ordinary archive navigation when enhancements fail or JavaScript is disabled.
 
+Add smooth, purposeful transitions to UI changes where they make interactions feel natural, such as changing images, opening dialogs, and expanding content. Respect `prefers-reduced-motion`, keep keyboard and focus behavior responsive, and avoid delaying access to content for the sake of animation.
+
 Keep page asset URLs in `src/views/layout.tsx` and the sitemap stylesheet URL in `src/views/sitemap.ts`. When browser asset bytes change, publish a new content-hashed filename and update its reference; retain published files until intentionally cleaned with the manual process in [development](development.md). After changing `src/client/gallery.ts`, use `npm run build:gallery`. Do not rebuild unchanged assets during a structural refactor.
 
 ## Verification and review
