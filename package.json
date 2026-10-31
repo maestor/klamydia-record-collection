@@ -9,6 +9,7 @@
 	"packageManager": "npm@11.19.1",
 	"scripts": {
 		"dev": "node --conditions=development --env-file-if-exists=.env --watch --import tsx src/server.ts",
+		"predev": "npm run assets:build",
 		"db:migrate": "node --conditions=development --import tsx scripts/migrate.ts",
 		"db:migrate:pending": "node --conditions=development --import tsx scripts/check-pending-migrations.ts",
 		"db:backup": "node --conditions=development --import tsx scripts/backup-database.ts",
@@ -23,11 +24,12 @@
 		"test": "vitest run",
 		"test:coverage": "vitest run --coverage",
 		"test:e2e": "playwright test",
+		"pretest:e2e": "npm run assets:build",
 		"test:production": "node --test tests/production.test.mjs",
 		"build": "tsc -p tsconfig.build.json",
+		"prebuild": "npm run assets:build",
+		"assets:build": "node --conditions=development --import tsx scripts/run-build-assets.ts",
 		"assets:clean": "node --conditions=development --import tsx scripts/run-cleanup-assets.ts",
-		"build:gallery": "node --conditions=development --import tsx scripts/build-gallery.ts",
-		"build:theme": "node --conditions=development --import tsx scripts/build-theme.ts",
 		"start": "node dist/server.js",
 		"verify": "npm run typecheck && npm run lint && npm run test:coverage && npm run build && npm run test:production && npm run test:e2e"
 	},

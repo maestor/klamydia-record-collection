@@ -1,4 +1,5 @@
 import { createMiddleware } from "hono/factory";
+import { assetCacheControl } from "./asset-cache.js";
 
 export function responsePolicy(mediaEndpoint: string) {
 	return createMiddleware(async (c, next) => {
@@ -14,7 +15,7 @@ export function responsePolicy(mediaEndpoint: string) {
 			c.res.status !== 200
 				? "no-store"
 				: c.req.path.startsWith("/assets/")
-					? "public, max-age=31536000, immutable"
+					? assetCacheControl(c.req.path)
 					: "public, max-age=0, s-maxage=300, stale-while-revalidate=60",
 		);
 	});

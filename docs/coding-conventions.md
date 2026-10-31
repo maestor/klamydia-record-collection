@@ -45,7 +45,7 @@ Use links for navigation, buttons for actions, meaningful headings, accessible c
 
 Add smooth, purposeful transitions to UI changes where they make interactions feel natural, such as changing images, opening dialogs, and expanding content. Respect `prefers-reduced-motion`, keep keyboard and focus behavior responsive, and avoid delaying access to content for the sake of animation.
 
-Keep page asset URLs in `src/views/layout.tsx` and the sitemap stylesheet URL in `src/views/sitemap.ts`. When browser asset bytes change, publish a new content-hashed filename and update its reference; retain published files until intentionally cleaned with the manual process in [development](development.md). After changing `src/client/gallery.ts`, use `npm run build:gallery`. Do not rebuild unchanged assets during a structural refactor.
+Keep page asset URLs in `src/views/layout.tsx` and the sitemap stylesheet URL in `src/views/sitemap.ts`. Edit maintained CSS and plain JavaScript in `assets/`, and browser controllers in `src/client/`; `npm run assets:build` writes ignored stable-name output under `public/assets/`. The build runs before dev, production build, and E2E tests. Content-hashed vendor assets and icons still need a new filename and reference when their bytes change; retain published files until intentionally cleaned with the manual process in [development](development.md).
 
 ## Verification and review
 
