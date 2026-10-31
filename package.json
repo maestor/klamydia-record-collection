@@ -29,7 +29,6 @@
 		"build": "tsc -p tsconfig.build.json",
 		"prebuild": "npm run assets:build",
 		"assets:build": "node --conditions=development --import tsx scripts/run-build-assets.ts",
-		"assets:clean": "node --conditions=development --import tsx scripts/run-cleanup-assets.ts",
 		"start": "node dist/server.js",
 		"verify": "npm run typecheck && npm run lint && npm run test:coverage && npm run build && npm run test:production && npm run test:e2e"
 	},
