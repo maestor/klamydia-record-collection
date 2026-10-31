@@ -1,5 +1,52 @@
 import { expect, test } from "@playwright/test";
 
+for (const theme of ["light", "dark"] as const) {
+	test(`applies saved ${theme} theme before the external controller loads`, async ({
+		page,
+	}) => {
+		await page.emulateMedia({
+			colorScheme: theme === "light" ? "dark" : "light",
+		});
+		await page.addInitScript(
+			(saved) => localStorage.setItem("theme", saved),
+			theme,
+		);
+		await page.route("**/assets/theme.js", (route) => route.abort());
+		await page.goto("/");
+		await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
+		await expect(page.locator("html")).toHaveCSS("color-scheme", theme);
+		await expect(page.locator(".theme-switch").first()).toBeHidden();
+	});
+}
+
+for (const blocked of [false, true]) {
+	test(`theme follows device changes with ${blocked ? "blocked storage" : "an invalid saved preference"}`, async ({
+		page,
+	}) => {
+		await page.addInitScript((denyStorage) => {
+			if (denyStorage) {
+				Object.defineProperty(window, "localStorage", {
+					get() {
+						throw new Error("Storage blocked");
+					},
+				});
+			} else localStorage.setItem("theme", "invalid");
+		}, blocked);
+		await page.emulateMedia({ colorScheme: "dark" });
+		await page.goto("/");
+		await expect(page.locator("html")).toHaveCSS("color-scheme", "dark");
+		await expect(
+			page.getByRole("button", { name: /Teema: tumma/ }),
+		).toBeVisible();
+		await page.emulateMedia({ colorScheme: "light" });
+		await expect(
+			page.getByRole("button", { name: /Teema: vaalea/ }),
+		).toBeVisible();
+		await page.getByRole("button", { name: /Teema/ }).click();
+		await expect(page.locator("html")).toHaveCSS("color-scheme", "dark");
+	});
+}
+
 test("theme follows the device until changed and remembers the choice", async ({
 	page,
 }) => {

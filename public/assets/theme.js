@@ -5,21 +5,9 @@ const deviceTheme = window.matchMedia("(prefers-color-scheme: dark)");
 function currentTheme() {
     return theme === "system" ? (deviceTheme.matches ? "dark" : "light") : theme;
 }
-try {
-    const saved = localStorage.getItem(themeKey);
-    if (saved === "light" || saved === "dark")
-        theme = saved;
-}
-catch {
-    // The device preference still works when storage is unavailable.
-}
-function applyTheme() {
-    if (theme === "system")
-        delete document.documentElement.dataset.theme;
-    else
-        document.documentElement.dataset.theme = theme;
-}
-applyTheme();
+const saved = document.documentElement.dataset.theme;
+if (saved === "light" || saved === "dark")
+    theme = saved;
 document.addEventListener("DOMContentLoaded", () => {
     const buttons = document.querySelectorAll(".theme-switch");
     const labels = { light: "vaalea", dark: "tumma" };
@@ -41,7 +29,7 @@ document.addEventListener("DOMContentLoaded", () => {
             catch {
                 // Keep the choice for this page when storage is unavailable.
             }
-            applyTheme();
+            document.documentElement.dataset.theme = theme;
             updateButton();
         });
     }

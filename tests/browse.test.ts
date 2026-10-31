@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { createClient } from "@libsql/client";
 import { within } from "@testing-library/dom";
 import { describe, expect, it } from "vitest";
@@ -49,12 +50,26 @@ it("shows the collection title and default description on the front page", async
 		);
 		expect(
 			Array.from(
-				document.querySelectorAll("head link[rel=stylesheet], head script"),
+				document.querySelectorAll(
+					"head link[rel=stylesheet], head script[src]",
+				),
 			).map(
 				(element) =>
 					element.getAttribute("href") || element.getAttribute("src"),
 			),
 		).toEqual(["/assets/style.css", "/assets/theme.js", "/assets/images.js"]);
+		const themeScript = document.querySelector(
+			'script[src="/assets/theme.js"]',
+		);
+		expect(themeScript?.hasAttribute("defer")).toBe(true);
+		const bootstrap = document.querySelector("head script:not([src])");
+		expect(bootstrap?.textContent).toBeTruthy();
+		const hash = createHash("sha256")
+			.update(bootstrap?.textContent ?? "")
+			.digest("base64");
+		const policy = response.headers.get("content-security-policy");
+		expect(policy).toContain(`script-src 'self' 'sha256-${hash}'`);
+		expect(policy).not.toContain("'unsafe-inline'");
 	} finally {
 		db.close();
 	}
@@ -210,11 +225,13 @@ it("shows the first preview as a linked card and offers the complete archive", a
 			expect(image?.getAttribute("width")).toBe("640");
 			expect(image?.getAttribute("height")).toBe("427");
 			expect(image?.getAttribute("loading")).toBe("eager");
+			expect(image?.getAttribute("fetchpriority")).toBe("high");
 			expect(link.closest("article")?.textContent).toContain(m.imageCount(2));
 			const olderImage = within(document.body)
 				.getByRole("link", { name: "Vanhempi" })
 				.querySelector("img");
 			expect(olderImage?.getAttribute("loading")).toBe("lazy");
+			expect(olderImage?.getAttribute("fetchpriority")).toBeNull();
 			expect(olderImage?.getAttribute("width")).toBeNull();
 			expect(olderImage?.getAttribute("height")).toBeNull();
 		}
@@ -224,6 +241,36 @@ it("shows the first preview as a linked card and offers the complete archive", a
 				.getByRole("link", { name: m.allPosts })
 				.getAttribute("href"),
 		).toBe("/archive");
+	} finally {
+		db.close();
+	}
+});
+
+it("loads appended archive images lazily without competing with the initial cover", async () => {
+	const db = createClient({ url: "file::memory:" });
+	try {
+		await migrate(db);
+		for (let index = 0; index < 14; index++) {
+			await db.execute({
+				sql: "INSERT INTO posts VALUES (?, ?, ?, ?)",
+				args: [`record-${index}`, `Levy ${index}`, "2026-01-01", "Teksti"],
+			});
+			await db.execute({
+				sql: "INSERT INTO images VALUES (?, ?, ?, ?)",
+				args: [`record-${index}`, 1, `/media/${"a".repeat(64)}.jpg`, "Kansi"],
+			});
+		}
+		const response = await createApp(db).request(
+			"/archive/fragments?page=2&start=1",
+		);
+		const fragment = document.createElement("ul");
+		fragment.innerHTML = await response.text();
+		const images = fragment.querySelectorAll("img");
+		expect(images).toHaveLength(2);
+		for (const image of images) {
+			expect(image.getAttribute("loading")).toBe("lazy");
+			expect(image.getAttribute("fetchpriority")).toBeNull();
+		}
 	} finally {
 		db.close();
 	}

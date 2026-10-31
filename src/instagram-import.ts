@@ -185,7 +185,7 @@ export async function importInstagram({
 					fit: "inside",
 					withoutEnlargement: true,
 				})
-				.jpeg({ quality: 85 })
+				.jpeg({ quality: 80, mozjpeg: true })
 				.toBuffer();
 			const preview = await storeImage(previewBytes);
 			const dimensions = await sharp(image).metadata();
