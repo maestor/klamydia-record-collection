@@ -112,6 +112,7 @@ export async function getTags(db: Client, slug: string) {
 			normalized: String(row.normalized),
 			display: String(row.display),
 			count: Number(row.post_count),
+			filterable: Number(row.post_count) < Number(row.archive_count),
 		}))
 		.sort(
 			(a, b) =>
@@ -147,18 +148,22 @@ export async function listPostSlugs(db: Client): Promise<string[]> {
 export async function listArchiveTags(db: Client) {
 	return (
 		await db.execute({
-			sql: `SELECT t.normalized, t.display, COUNT(*) AS post_count FROM tags t
+			sql: `SELECT t.normalized, t.display, COUNT(*) AS post_count,
+		(SELECT COUNT(*) FROM posts archive_post WHERE NOT EXISTS
+			(SELECT 1 FROM instagram_posts intro WHERE intro.post_slug = archive_post.slug AND intro.media_id = ?)) AS archive_count
+		FROM tags t
 		JOIN post_tags pt ON pt.tag_normalized = t.normalized
 		JOIN posts p ON p.slug = pt.post_slug
 		WHERE NOT EXISTS (SELECT 1 FROM instagram_posts ip WHERE ip.post_slug = p.slug AND ip.media_id = ?)
 		GROUP BY t.normalized, t.display`,
-			args: [ABOUT_MEDIA_ID],
+			args: [ABOUT_MEDIA_ID, ABOUT_MEDIA_ID],
 		})
 	).rows
 		.map((row) => ({
 			normalized: String(row.normalized),
 			display: String(row.display),
 			count: Number(row.post_count),
+			filterable: Number(row.post_count) < Number(row.archive_count),
 		}))
 		.sort(
 			(a, b) =>
