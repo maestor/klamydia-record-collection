@@ -33,7 +33,7 @@ DATABASE_URL=file:.data/collection.db npm run dev
 
 ## Manual Instagram imports into Turso
 
-Run these commands from this repository on your computer, using Node 24 and `npm ci`. They write metadata directly to Turso and upload images to the existing private R2 bucket. They are manual commands; there is no scheduler or public import endpoint.
+Run these commands from this repository on your computer, using Node 26 and `npm ci`. They write metadata directly to Turso and upload images to the existing private R2 bucket. They are manual commands; there is no scheduler or public import endpoint.
 
 ### Configure once
 

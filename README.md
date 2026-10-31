@@ -2,7 +2,7 @@
 
 A Finnish record collection archive. Hono renders pages from local SQLite or Turso and private R2 media. A manual importer reads the owner's Instagram posts; synthetic fixtures are used only by tests.
 
-Use Node 24 and npm 11.19.1. From the repository root:
+Use Node 26 and npm 11.19.1. From the repository root:
 
 ```sh
 npm ci
