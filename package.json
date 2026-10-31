@@ -26,6 +26,7 @@
 		"test:production": "node --test tests/production.test.mjs",
 		"build": "tsc -p tsconfig.build.json",
 		"build:gallery": "node --conditions=development --import tsx scripts/build-gallery.ts",
+		"build:theme": "node --conditions=development --import tsx scripts/build-theme.ts",
 		"start": "node dist/server.js",
 		"verify": "npm run typecheck && npm run lint && npm run test:coverage && npm run build && npm run test:production && npm run test:e2e"
 	},

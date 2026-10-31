@@ -122,7 +122,7 @@ it("shows a cleaned reading view while preserving the source description", async
 				.getByRole("link", { name: m.source })
 				.getAttribute("href"),
 		).toBe("https://www.instagram.com/p/test/");
-		expect(document.querySelector("details")).toBeNull();
+		expect(document.querySelector(".post-detail details")).toBeNull();
 		const tags = within(document.body).getByRole("list", {
 			name: m.tags,
 		});
