@@ -37,7 +37,7 @@ The database-copy bootstrap is a one-time transfer; later local imports do not a
 
 ## 2. Vercel project
 
-Connect the existing Hono project to this repository. Set the root directory to the repository root, framework to **Hono**, Node.js to **24.x**, and production branch to **main**. Leave the output directory unset. `vercel.json` supplies `npm ci` and `npm run build`. Root `app.js` exports the Hono app from compiled `dist/` modules; `npm start` remains the standalone Node server.
+Connect the existing Hono project to this repository. Set the root directory to the repository root, framework to **Hono**, Node.js to **26.x**, and production branch to **main**. Leave the output directory unset. `vercel.json` supplies `npm ci` and `npm run build`. Root `app.js` exports the Hono app from compiled `dist/` modules; `npm start` remains the standalone Node server.
 
 Add these variables to the Vercel **Production** environment:
 
@@ -78,7 +78,7 @@ Create a GitHub environment named **production**, restricted to deployments from
 
 These are the only user-configured GitHub secrets required, and belong to **Production Migration**. The PR Verify workflow uses no production secrets. No Vercel, R2, or Instagram credentials are needed by either workflow. Set the same `DATABASE_URL` in GitHub and Vercel; the GitHub token can write, while Vercel's token must be read-only.
 
-Enable Actions and configure the `main` ruleset/branch protection to require PRs and the **Verify** check from workflow **Verify** before merging. The workflow alone does not enforce merge protection. Do not require **Migrate production database** for PR merges: it runs only on `main`, in its own workflow. Production migration workflow runs serialize without cancelling a running migration, and an outdated main revision stops before migration. New PR commits cancel superseded PR verification runs. Verification uses Node 24, npm 11.19.1 and Playwright's matching dedicated headless Chromium shell.
+Enable Actions and configure the `main` ruleset/branch protection to require PRs and the **Verify** check from workflow **Verify** before merging. The workflow alone does not enforce merge protection. Do not require **Migrate production database** for PR merges: it runs only on `main`, in its own workflow. Production migration workflow runs serialize without cancelling a running migration, and an outdated main revision stops before migration. New PR commits cancel superseded PR verification runs. Verification uses Node 26, npm 11.19.1 and Playwright's matching dedicated headless Chromium shell.
 
 ### Pending migrations and backups
 
