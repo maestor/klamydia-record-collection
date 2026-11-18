@@ -5,6 +5,7 @@ import type { GalleryImage } from "#presentation/gallery";
 import { Gallery } from "../components/gallery.js";
 import { InstagramIcon } from "../components/instagram-icon.js";
 import { PageHeading } from "../components/page-heading.js";
+import { RecordIcon } from "../components/record-icon.js";
 import { Layout } from "../layout.js";
 
 type PostPageProps = {
@@ -14,6 +15,7 @@ type PostPageProps = {
 	canonical: string;
 	images: GalleryImage[];
 	tags: { normalized: string; display: string }[];
+	discogsReleases: { id: number; name: string }[];
 	sourceUrl?: string;
 	backHref: string;
 };
@@ -25,6 +27,7 @@ export const PostPage: FC<PostPageProps> = ({
 	canonical,
 	images,
 	tags,
+	discogsReleases,
 	sourceUrl,
 	backHref,
 }) => (
@@ -55,15 +58,41 @@ export const PostPage: FC<PostPageProps> = ({
 					))}
 				</ul>
 			)}
-			{sourceUrl && (
-				<p>
-					<a class="source-link" href={sourceUrl}>
-						<InstagramIcon />
-						{m.source}
-					</a>
-				</p>
+			{(sourceUrl || discogsReleases.length > 0) && (
+				<section aria-labelledby="elsewhere-heading">
+					<h2 class="section-title" id="elsewhere-heading">
+						{m.elsewhere}
+					</h2>
+					<ul class="elsewhere-links">
+						{sourceUrl && (
+							<li>
+								<a
+									class="source-link"
+									href={sourceUrl}
+									target="_blank"
+									rel="noopener"
+								>
+									<InstagramIcon />
+									{m.source}
+								</a>
+							</li>
+						)}
+						{discogsReleases.map(({ id, name }) => (
+							<li>
+								<a
+									class="source-link"
+									href={`https://www.discogs.com/release/${id}`}
+									target="_blank"
+									rel="noopener"
+								>
+									<RecordIcon />
+									<span>{m.discogsLink(name)}</span>
+								</a>
+							</li>
+						))}
+					</ul>
+				</section>
 			)}
-
 			<p>
 				<a href={backHref}>{m.backArchive}</a>
 			</p>

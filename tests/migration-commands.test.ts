@@ -20,10 +20,10 @@ it("reports pending migrations to Actions and skips a current schema without wri
 	try {
 		await import("../scripts/check-pending-migrations.js");
 		expect(logs.mock.calls.flat().join(" ")).toContain(
-			"Pending migrations (4)",
+			"Pending migrations (6)",
 		);
 		expect(await readFile(output, "utf8")).toBe(
-			"has_pending=true\npending_count=4\n",
+			"has_pending=true\npending_count=6\n",
 		);
 		expect(
 			(await db.execute("SELECT name FROM sqlite_master WHERE type = 'table'"))

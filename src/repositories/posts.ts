@@ -170,3 +170,17 @@ export async function listArchiveTags(db: Client) {
 				b.count - a.count || a.display.localeCompare(b.display, "fi-FI"),
 		);
 }
+
+export async function getDiscogsReleases(
+	db: Pick<Client, "execute">,
+	slug: string,
+) {
+	const result = await db.execute({
+		sql: "SELECT release_id,name FROM post_discogs_releases WHERE post_slug = ? ORDER BY link_id",
+		args: [slug],
+	});
+	return result.rows.map((row) => ({
+		id: Number(row.release_id),
+		name: String(row.name),
+	}));
+}

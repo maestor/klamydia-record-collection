@@ -5,7 +5,13 @@ import { archiveQuery, parseArchiveRange } from "#presentation/archive";
 import { presentDescription } from "#presentation/description";
 import { presentGallery } from "#presentation/gallery";
 import { isMediaPath } from "#presentation/media";
-import { getAboutPost, getImages, getPost, getTags } from "#repositories/posts";
+import {
+	getAboutPost,
+	getDiscogsReleases,
+	getImages,
+	getPost,
+	getTags,
+} from "#repositories/posts";
 import { AboutPage } from "#views/pages/about";
 import { MessagePage } from "#views/pages/message";
 import { PostPage } from "#views/pages/post";
@@ -47,9 +53,10 @@ export function createPostRoutes(db: Client, siteUrl: string) {
 				<MessagePage title={m.notFound} message={m.postNotFound} />,
 				404,
 			);
-		const [images, tags] = await Promise.all([
+		const [images, tags, discogsReleases] = await Promise.all([
 			getImages(db, slug),
 			getTags(db, slug),
+			getDiscogsReleases(db, slug),
 		]);
 		const context = parseArchiveRange(
 			c.req.query("page"),
@@ -68,6 +75,7 @@ export function createPostRoutes(db: Client, siteUrl: string) {
 				canonical={`${siteUrl}/posts/${encodeURIComponent(post.slug)}`}
 				images={presentGallery(images, post.title)}
 				tags={tags}
+				discogsReleases={discogsReleases}
 				sourceUrl={sourceUrl}
 				backHref={
 					context
