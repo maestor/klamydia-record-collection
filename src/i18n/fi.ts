@@ -45,7 +45,7 @@ export const messages = {
     covers: "Klamydia-coverit",
     otherProjects: "Jäsenten muut projektit",
   },
-  introLabel: "Levyjä · tarinoita · muistoja",
+  introLabel: "Kolme sointua, loputtomasti painoksia: Klamydia tarttui ja jäi.",
   postLabel: "Klamydiakokoelma / Julkaisu",
   archiveLabel: "Tähän mennessä julkaistua",
   latest: "Uusimmat julkaisut",
@@ -72,7 +72,8 @@ export const messages = {
     `Julkaisun ${title} kuva ${index} / ${count}`,
   backArchive: "Takaisin arkistoon",
   elsewhere: "Aiheesta muualla",
-  discogsLinkCount: (count: number) => count === 1 ? "1 Discogs-linkki" : `${count} Discogs-linkkiä`,
+  discogsLinkCount: (count: number) =>
+    count === 1 ? "1 Discogs-linkki" : `${count} Discogs-linkkiä`,
   discogsLink: (name: string) => (name ? `Tutustu äänitteeseen (${name})` : "Tutustu äänitteeseen"),
   source: "Alkuperäinen julkaisu",
   defaultDescription:
@@ -89,7 +90,10 @@ export const messages = {
   archiveProgressTemplate,
   archivePageTemplate,
   archiveProgress: (start: number, end: number, count: number) =>
-    archiveProgressTemplate.replace("{start}", String(start)).replace("{end}", String(end)).replace("{count}", String(count)),
+    archiveProgressTemplate
+      .replace("{start}", String(start))
+      .replace("{end}", String(end))
+      .replace("{count}", String(count)),
   newer: "Uudemmat",
   page: (number: number) => archivePageTemplate.replace("{page}", String(number)),
 } as const;
