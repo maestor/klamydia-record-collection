@@ -101,6 +101,8 @@ h1 { max-width: 18ch; font-family: Impact, Haettenschweiler, 'Arial Narrow Bold'
 .archive-tags .tags { max-width: none; }
 .selected-tag { display: flex; align-items: center; flex-wrap: wrap; gap: .5rem; margin: 1rem 0 0; }
 .archive-tags summary { cursor: pointer; font-weight: 700; text-decoration: underline; }
+.elsewhere-links { list-style: none; margin: 0 0 1.5rem; padding: 0; }
+.elsewhere-links .source-link { max-width: 100%; overflow-wrap: anywhere; }
 .source-link { display: inline-flex; align-items: center; gap: .5rem; padding-block: .5rem; }
 .source-link svg { width: 1.2em; height: 1.2em; flex: none; }
 @media (max-width: 800px) { .post-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

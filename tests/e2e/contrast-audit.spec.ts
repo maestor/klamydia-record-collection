@@ -1,6 +1,8 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
+import { messages as m } from "../../src/i18n/fi.js";
+
 for (const scheme of ["light", "dark"] as const) {
 	for (const path of ["/", "/archive", "/about", "/posts/esimerkki"]) {
 		test(`${scheme} contrast on ${path}`, async ({ page }) => {
@@ -20,7 +22,7 @@ for (const scheme of ["light", "dark"] as const) {
 		await page.setViewportSize({ width: 320, height: 700 });
 		await page.emulateMedia({ colorScheme: scheme, reducedMotion: "reduce" });
 		await page.goto("/");
-		await page.locator("summary").filter({ hasText: "Valikko" }).click();
+		await page.locator("summary").filter({ hasText: m.menu }).click();
 		expect(
 			(
 				await new AxeBuilder({ page })

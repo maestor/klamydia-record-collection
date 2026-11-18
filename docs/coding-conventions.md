@@ -39,7 +39,7 @@ These aliases resolve on the server. The current browser controller build emits 
 
 ## UI contracts
 
-Use Finnish messages and date formatting from `src/i18n/fi.ts`. Render imported text through escaped JSX; never insert imported raw HTML. Preserve the local content-hashed media allowlist and Instagram source-link validation when moving presentation code.
+Use Finnish messages and date formatting from `src/i18n/fi.ts`. In tests, look up translated labels and expected text through the same message keys, passing the scenario’s own values for names, counts, and other placeholders. Render imported text through escaped JSX; never insert imported raw HTML. Preserve the local content-hashed media allowlist and Instagram source-link validation when moving presentation code.
 
 Use links for navigation, buttons for actions, meaningful headings, accessible control names, and deliberate focus behavior. Keep status announcements and image alternatives intact. Existing classes, IDs, and `data-*` attributes used by CSS or controllers are contracts: update their consumers and behavioral tests together when changing them. Preserve full-image links and ordinary archive navigation when enhancements fail or JavaScript is disabled.
 

@@ -9,14 +9,21 @@ const saved = document.documentElement.dataset.theme;
 if (saved === "light" || saved === "dark") theme = saved;
 document.addEventListener("DOMContentLoaded", () => {
 	const buttons = document.querySelectorAll<HTMLButtonElement>(".theme-switch");
-	const labels = { light: "vaalea", dark: "tumma" };
+	const navigation = document.querySelector<HTMLElement>(
+		"nav[data-light-label]",
+	);
+	if (!navigation) return;
+	const { lightLabel, darkLabel, lightTitle, darkTitle } = navigation.dataset;
+	if (!lightLabel || !darkLabel || !lightTitle || !darkTitle) return;
+	const labels = {
+		light: { title: lightTitle, label: lightLabel },
+		dark: { title: darkTitle, label: darkLabel },
+	};
 	function updateButton() {
+		const { title, label } = labels[currentTheme()];
 		for (const button of buttons) {
-			button.setAttribute(
-				"aria-label",
-				`Teema: ${labels[currentTheme()]}. Vaihda teemaa`,
-			);
-			button.title = `Teema: ${labels[currentTheme()]}`;
+			button.setAttribute("aria-label", label);
+			button.title = title;
 		}
 	}
 	updateButton();

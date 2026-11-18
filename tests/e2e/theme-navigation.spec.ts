@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
 
+import { messages as m } from "../../src/i18n/fi.js";
+
 for (const theme of ["light", "dark"] as const) {
 	test(`applies saved ${theme} theme before the external controller loads`, async ({
 		page,
@@ -36,13 +38,17 @@ for (const blocked of [false, true]) {
 		await page.goto("/");
 		await expect(page.locator("html")).toHaveCSS("color-scheme", "dark");
 		await expect(
-			page.getByRole("button", { name: /Teema: tumma/ }),
+			page.getByRole("button", { name: m.themeSwitchLabel(m.themeTitle.dark) }),
 		).toBeVisible();
 		await page.emulateMedia({ colorScheme: "light" });
 		await expect(
-			page.getByRole("button", { name: /Teema: vaalea/ }),
+			page.getByRole("button", {
+				name: m.themeSwitchLabel(m.themeTitle.light),
+			}),
 		).toBeVisible();
-		await page.getByRole("button", { name: /Teema/ }).click();
+		await page
+			.getByRole("button", { name: m.themeSwitchLabel(m.themeTitle.light) })
+			.click();
 		await expect(page.locator("html")).toHaveCSS("color-scheme", "dark");
 	});
 }
@@ -57,15 +63,21 @@ test("theme follows the device until changed and remembers the choice", async ({
 		"background-color",
 		"rgb(25, 27, 25)",
 	);
-	await page.getByRole("button", { name: /Teema/ }).click();
+	await page
+		.getByRole("button", { name: m.themeSwitchLabel(m.themeTitle.dark) })
+		.click();
 	await expect(page.locator("html")).toHaveCSS("color-scheme", "light");
 	await page.reload();
 	await expect(page.locator("html")).toHaveCSS("color-scheme", "light");
-	await page.getByRole("button", { name: /Teema/ }).click();
+	await page
+		.getByRole("button", { name: m.themeSwitchLabel(m.themeTitle.light) })
+		.click();
 	await expect(page.locator("html")).toHaveCSS("color-scheme", "dark");
 	await page.emulateMedia({ colorScheme: "light" });
 	await expect(page.locator("html")).toHaveCSS("color-scheme", "dark");
-	await page.getByRole("button", { name: /Teema/ }).click();
+	await page
+		.getByRole("button", { name: m.themeSwitchLabel(m.themeTitle.dark) })
+		.click();
 	await expect(page.locator("html")).toHaveCSS("color-scheme", "light");
 });
 
@@ -74,18 +86,22 @@ test("the first toggle switches away from the light device setting", async ({
 }) => {
 	await page.emulateMedia({ colorScheme: "light" });
 	await page.goto("/");
-	await page.getByRole("button", { name: /Teema/ }).click();
+	await page
+		.getByRole("button", { name: m.themeSwitchLabel(m.themeTitle.light) })
+		.click();
 	await expect(page.locator("html")).toHaveCSS("color-scheme", "dark");
 });
 
 test("mobile menu exposes navigation and theme controls", async ({ page }) => {
 	await page.setViewportSize({ width: 320, height: 700 });
 	await page.goto("/");
-	await expect(page.getByRole("link", { name: "Arkisto" })).toBeHidden();
-	await page.locator("summary").filter({ hasText: "Valikko" }).click();
-	await expect(page.getByRole("link", { name: "Arkisto" })).toBeVisible();
-	await expect(page.getByRole("link", { name: "Tietoa" })).toBeVisible();
-	await expect(page.getByRole("button", { name: /Teema/ })).toBeVisible();
+	await expect(page.getByRole("link", { name: m.archive })).toBeHidden();
+	await page.locator("summary").filter({ hasText: m.menu }).click();
+	await expect(page.getByRole("link", { name: m.archive })).toBeVisible();
+	await expect(page.getByRole("link", { name: m.about })).toBeVisible();
+	await expect(
+		page.getByRole("button", { name: m.themeSwitchLabel(m.themeTitle.light) }),
+	).toBeVisible();
 	expect(
 		await page.evaluate(
 			() => document.documentElement.scrollWidth <= innerWidth,

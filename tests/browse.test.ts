@@ -32,9 +32,7 @@ it("shows the collection title and default description on the front page", async
 		await migrate(db);
 		const response = await createApp(db).request("/");
 		document.documentElement.innerHTML = await response.text();
-		expect(document.title).toBe(
-			"Klamydiakokoelma – Kattava taudinkuva Klamydia-orkesterin musiikkiäänitteiden muodossa",
-		);
+		expect(document.title).toBe(m.homeTitle);
 		expect(
 			within(document.body).getByRole("heading", {
 				level: 1,
@@ -45,9 +43,7 @@ it("shows the collection title and default description on the front page", async
 			document
 				.querySelector('meta[name="description"]')
 				?.getAttribute("content"),
-		).toBe(
-			"Klamydia-äänitekeräilijän levykokoelman esittely tarinoiden ja kuvien muodossa.",
-		);
+		).toBe(m.defaultDescription);
 		expect(
 			Array.from(
 				document.querySelectorAll(
@@ -397,9 +393,7 @@ it("filters archive posts by tag and preserves the selection in navigation", asy
 		document.documentElement.innerHTML = await (
 			await app.request("/archive?tag=punk%20rock")
 		).text();
-		expect(
-			within(document.body).getByText("Hae aihetunnisteilla"),
-		).toBeTruthy();
+		expect(within(document.body).getByText(m.filterTags)).toBeTruthy();
 		expect(
 			within(document.body).queryByRole("link", { name: "Tagged 1" }),
 		).toBeNull();
