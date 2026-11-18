@@ -6,6 +6,39 @@ import { migrate } from "../src/db.js";
 import { messages as m } from "../src/i18n/fi.js";
 import { createTestApp } from "./helpers.js";
 
+it("shows each post’s Discogs count outside the edit link and omits zero counts", async () => {
+	const db = createClient({ url: "file::memory:" });
+	try {
+		await migrate(db);
+		for (const title of ["Solo", "Double", "Empty"]) {
+			await db.execute({
+				sql: "INSERT INTO posts VALUES (?, ?, '2026-01-01', '')",
+				args: [title, title],
+			});
+		}
+		await db.execute(
+			"INSERT INTO post_discogs_releases (post_slug,release_id) VALUES ('Solo',11),('Double',11),('Double',22)",
+		);
+		const editor = createEditor({ local: () => db, production: () => db });
+		const response = await editor.request(`${editorOrigin}/local`, {
+			headers: { host: new URL(editorOrigin).host },
+		});
+		document.documentElement.innerHTML = await response.text();
+		for (const [title, text] of [
+			["Empty", "Empty"],
+			["Solo", `Solo • ${m.discogsLinkCount(1)}`],
+			["Double", `Double • ${m.discogsLinkCount(2)}`],
+		]) {
+			const link = within(document.body).getByRole("link", {
+				name: title,
+			});
+			expect(link.closest("li")?.textContent).toBe(text);
+		}
+	} finally {
+		db.close();
+	}
+});
+
 it("saves pasted links to the public post and protects edits across open tabs", async () => {
 	const db = createClient({ url: "file::memory:" });
 	try {

@@ -62,6 +62,7 @@ export const messages = {
     `Julkaisun ${title} kuva ${index} / ${count}`,
   backArchive: "Takaisin arkistoon",
   elsewhere: "Aiheesta muualla",
+  discogsLinkCount: (count: number) => count === 1 ? "1 Discogs-linkki" : `${count} Discogs-linkkiä`,
   discogsLink: (name: string) => (name ? `Tutustu äänitteeseen (${name})` : "Tutustu äänitteeseen"),
   source: "Alkuperäinen julkaisu",
   defaultDescription:

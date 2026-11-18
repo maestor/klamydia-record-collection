@@ -1,6 +1,7 @@
 import type { Client } from "@libsql/client";
 import { Hono } from "hono";
 import type { Child } from "hono/jsx";
+import { messages as m } from "../src/i18n/fi.js";
 import {
 	ABOUT_MEDIA_ID,
 	getDiscogsReleases,
@@ -170,7 +171,9 @@ function environmentRoutes(
 		const db = await database();
 		const q = c.req.query("q")?.trim() ?? "";
 		const { rows } = await db.execute({
-			sql: `SELECT p.slug,p.title FROM posts p
+			sql: `SELECT p.slug,p.title,
+   (SELECT COUNT(*) FROM post_discogs_releases r WHERE r.post_slug=p.slug) AS discogs_count
+   FROM posts p
    WHERE NOT EXISTS (SELECT 1 FROM instagram_posts i WHERE i.post_slug=p.slug AND i.media_id=?)
    AND (instr(lower(p.title),lower(?))>0 OR instr(p.slug,?)>0) ORDER BY p.published_at DESC,p.slug`,
 			args: [ABOUT_MEDIA_ID, q, q],
@@ -191,6 +194,8 @@ function environmentRoutes(
 								>
 									{String(r.title)}
 								</a>
+								{Number(r.discogs_count) > 0 &&
+									` • ${m.discogsLinkCount(Number(r.discogs_count))}`}
 							</li>
 						))}
 					</ul>
