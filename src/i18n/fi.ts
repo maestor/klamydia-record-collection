@@ -33,8 +33,18 @@ export const messages = {
   removeTag: (tag: string) => `Poista aihetunniste ${tag}`,
   emptyTag: "Tällä aihetunnisteella ei löytynyt julkaisuja.",
   empty: "Julkaisuja ei vielä ole.",
-  intro:
-    "Tervetuloa kattavan Klamydia-orkesterin fyysisten äänitejulkaisujen kokoelman pariin. Selaile arkistoa tai yksittäisiä julkaisuja. Sisältö on tuotu Instagram-tililtä, johon sitä on dokumentoitu vuodesta 2023 alkaen.",
+  intro: [
+    "Tervetuloa kattavan Klamydia-orkesterin fyysisten äänitejulkaisujen kokoelman pariin! Taudinkuvaa eli keräilyharrastusta takana vuodesta 1997. Julkaisut on tuotu Instagram-tililtä, johon kokoelmaa on dokumentoitu vuodesta 2023 alkaen.",
+    "Sivusto sai alkunsa vuonna 2026 ja tänne tuodaan tietoja myös Discogsista, johon kaikki kokoelman levyt on listattu.",
+  ],
+  collectionNumbers: "Kokoelma numeroina",
+  collectionTotal: "Yhteensä",
+  collectionFolders: {
+    releases: "Klamydia-julkaisut",
+    compilations: "Klamydiaa kokoelmilla",
+    covers: "Klamydia-coverit",
+    otherProjects: "Jäsenten muut projektit",
+  },
   introLabel: "Levyjä · tarinoita · muistoja",
   postLabel: "Klamydiakokoelma / Julkaisu",
   archiveLabel: "Tähän mennessä julkaistua",

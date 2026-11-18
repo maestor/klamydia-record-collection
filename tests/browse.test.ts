@@ -537,3 +537,59 @@ it("hides tags shared by every archive post but keeps post links usable", async 
 		db.close();
 	}
 });
+
+it("shows owned copies per Discogs folder before the latest posts", async () => {
+	const db = createClient({ url: "file::memory:" });
+	try {
+		await migrate(db);
+		const app = createApp(db);
+		async function readStats() {
+			const response = await app.request("/");
+			document.documentElement.innerHTML = await response.text();
+			const stats = within(document.body).getByRole("region", {
+				name: m.collectionNumbers,
+			});
+			const latest = within(document.body).getByRole("heading", {
+				name: m.latest,
+				level: 2,
+			});
+			expect(
+				stats.compareDocumentPosition(latest) &
+					Node.DOCUMENT_POSITION_FOLLOWING,
+			).toBeTruthy();
+			return Array.from(stats.querySelectorAll("dt"), (term) => [
+				term.textContent,
+				term.nextElementSibling?.textContent,
+			]);
+		}
+		const labels = [m.collectionTotal, ...Object.values(m.collectionFolders)];
+		expect(await readStats()).toEqual(labels.map((label) => [label, "0"]));
+		await db.execute(
+			"INSERT INTO discogs_releases VALUES (42,'Shared pressing','{}')",
+		);
+		let instance = 0;
+		for (const [id, count] of [
+			[2038060, 3],
+			[2381651, 1],
+			[5186965, 2],
+			[2381653, 0],
+		]) {
+			await db.execute({
+				sql: "INSERT INTO discogs_folders VALUES (?, 'Discogs folder', '{}')",
+				args: [id],
+			});
+			for (let i = 0; i < count; i++)
+				await db.execute({
+					sql: "INSERT INTO discogs_copies VALUES (?,42,?,'{}')",
+					args: [++instance, id],
+				});
+		}
+		expect(await readStats()).toEqual(
+			labels.map((label, i) => [label, String([6, 3, 1, 2, 0][i])]),
+		);
+		for (const paragraph of m.intro)
+			expect(within(document.body).getByText(paragraph).tagName).toBe("P");
+	} finally {
+		db.close();
+	}
+});

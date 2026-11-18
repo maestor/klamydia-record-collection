@@ -1,8 +1,9 @@
 import { setTimeout as delay } from "node:timers/promises";
 import type { Client, InStatement } from "@libsql/client";
 
+import { collectionFolders } from "./discogs-folders.js";
+
 const collection = "/users/maestor/collection";
-const folderIds = [2038060, 2381651, 5186965, 2381653];
 type DiscogsRequest = (url: string, options: RequestInit) => Promise<Response>;
 type JsonObject = Record<string, unknown>;
 type CollectionCopy = { releaseId: number; folderId: number; data: string };
@@ -120,7 +121,7 @@ export async function importDiscogs(
 			args: [integer(field.id, 1), name(field.name), JSON.stringify(field)],
 		});
 	const instances = new Map<number, CollectionCopy>();
-	for (const folderId of folderIds) {
+	for (const { id: folderId } of collectionFolders) {
 		const folder = folders.find((row) => row.id === folderId);
 		if (!folder) throw new Error(`Discogs folder ${folderId} is missing`);
 		const count = integer(folder.count, 0);
@@ -149,7 +150,7 @@ export async function importDiscogs(
 		});
 	await db.batch(statements, "write");
 	return {
-		folders: folderIds.length,
+		folders: collectionFolders.length,
 		copies: instances.size,
 		releases: releases.size,
 	};
