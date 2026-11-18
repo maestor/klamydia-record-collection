@@ -7,6 +7,7 @@ import {
 	isValidPage,
 	parseArchiveRange,
 } from "#presentation/archive";
+import { getCollectionCounts } from "#repositories/collection-counts";
 import { listArchiveTags, listPosts } from "#repositories/posts";
 import { PostItems } from "#views/components/post-list";
 import { ArchivePage } from "#views/pages/archive";
@@ -18,8 +19,13 @@ const PAGE_SIZE = 12;
 export function createCollectionRoutes(db: Client, siteUrl: string) {
 	const app = new Hono();
 	app.get("/", async (c) => {
-		const posts = await listPosts(db, 6);
-		return c.html(<HomePage posts={posts} canonical={`${siteUrl}/`} />);
+		const [posts, counts] = await Promise.all([
+			listPosts(db, 6),
+			getCollectionCounts(db),
+		]);
+		return c.html(
+			<HomePage counts={counts} posts={posts} canonical={`${siteUrl}/`} />,
+		);
 	});
 	app.get("/archive/fragments", async (c) => {
 		const rawPage = c.req.query("page");
