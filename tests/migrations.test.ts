@@ -63,7 +63,7 @@ it("adopts an existing collection and applies later migrations only once", async
 		]);
 		expect(
 			(await db.execute("SELECT name FROM schema_migrations")).rows,
-		).toHaveLength(6);
+		).toHaveLength(7);
 	} finally {
 		db.close();
 	}
