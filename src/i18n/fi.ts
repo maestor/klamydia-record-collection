@@ -45,7 +45,7 @@ export const messages = {
     covers: "Klamydia-coverit",
     otherProjects: "Jäsenten muut projektit",
   },
-  introLabel: "Kolme sointua, loputtomasti painoksia: Klamydia tarttui ja jäi.",
+  introLabel: "Kolme sointua, loputtomasti painoksia. Klamydia tarttui ja jäi.",
   postLabel: "Klamydiakokoelma / Julkaisu",
   archiveLabel: "Tähän mennessä julkaistua",
   latest: "Uusimmat julkaisut",
