@@ -3,6 +3,7 @@ import { within } from "@testing-library/dom";
 import { expect, it } from "vitest";
 import { createEditor, editorOrigin } from "../scripts/discogs-editor.js";
 import { migrate } from "../src/db.js";
+import { messages as m } from "../src/i18n/fi.js";
 import { createTestApp } from "./helpers.js";
 
 it("saves pasted links to the public post and protects edits across open tabs", async () => {
@@ -141,13 +142,13 @@ it("publishes the owner's release names in order after the original Instagram li
 			await createTestApp(db).request("/posts/demo")
 		).text();
 		const region = within(document.body).getByRole("region", {
-			name: "Aiheesta muualla",
+			name: m.elsewhere,
 		});
 		const links = within(region).getAllByRole("link");
 		expect(links.map((link) => link.textContent)).toEqual([
-			"Alkuperäinen julkaisu",
-			"Tutustu äänitteeseen (Ensipainos (LP)) Discogsissa",
-			"Tutustu äänitteeseen Discogsissa",
+			m.source,
+			m.discogsLink("Ensipainos (LP)"),
+			m.discogsLink(""),
 		]);
 		for (const link of links) {
 			expect(link.getAttribute("target")).toBe("_blank");

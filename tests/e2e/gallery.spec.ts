@@ -1,12 +1,18 @@
 import { expect, test } from "@playwright/test";
 import { messages as m } from "../../src/i18n/fi.js";
 
+function galleryStatus(current: number, total: number) {
+	return m.galleryStatus
+		.replace("{current}", String(current))
+		.replace("{total}", String(total));
+}
+
 test("browses images in source order with buttons, keyboard and thumbnails", async ({
 	page,
 }) => {
 	await page.goto("/posts/esimerkki");
 	const gallery = page.getByRole("region", { name: m.images });
-	await expect(gallery.getByRole("status")).toHaveText("Kuva 1 / 2");
+	await expect(gallery.getByRole("status")).toHaveText(galleryStatus(1, 2));
 	await expect(
 		gallery.getByRole("img", { name: "Kuvitteellinen levykansi" }),
 	).toBeVisible();
@@ -17,12 +23,12 @@ test("browses images in source order with buttons, keyboard and thumbnails", asy
 	await next.focus();
 	await page.keyboard.press("Enter");
 	await expect(next).toBeFocused();
-	await expect(gallery.getByRole("status")).toHaveText("Kuva 2 / 2");
+	await expect(gallery.getByRole("status")).toHaveText(galleryStatus(2, 2));
 	await expect(
 		gallery.getByRole("img", { name: "Kuvitteellinen toinen kuva" }),
 	).toBeVisible();
 	await page.keyboard.press("ArrowRight");
-	await expect(gallery.getByRole("status")).toHaveText("Kuva 1 / 2");
+	await expect(gallery.getByRole("status")).toHaveText(galleryStatus(1, 2));
 	const thumbnail = gallery
 		.getByRole("group", { name: m.galleryThumbnails })
 		.getByRole("button", {
@@ -33,7 +39,7 @@ test("browses images in source order with buttons, keyboard and thumbnails", asy
 	await thumbnail.click();
 	await expect(thumbnail).toBeFocused();
 	await expect(thumbnail).toHaveAttribute("aria-pressed", "true");
-	await expect(gallery.getByRole("status")).toHaveText("Kuva 2 / 2");
+	await expect(gallery.getByRole("status")).toHaveText(galleryStatus(2, 2));
 });
 
 test("shows thumbnails and animates image changes", async ({ page }) => {
@@ -46,7 +52,7 @@ test("shows thumbnails and animates image changes", async ({ page }) => {
 		gallery.getByRole("button", { name: m.galleryToggleThumbnails }),
 	).toHaveCount(0);
 	await gallery.getByRole("button", { name: m.galleryNext }).click();
-	await expect(gallery.getByRole("status")).toHaveText("Kuva 2 / 2");
+	await expect(gallery.getByRole("status")).toHaveText(galleryStatus(2, 2));
 	await expect
 		.poll(() =>
 			gallery
@@ -145,9 +151,9 @@ test("a twenty-image gallery stays compact and every image remains reachable on 
 	await page.setViewportSize({ width: 320, height: 800 });
 	await page.goto("/posts/esimerkki-26");
 	const gallery = page.getByRole("region", { name: m.images });
-	await expect(gallery.getByRole("status")).toHaveText("Kuva 1 / 20");
+	await expect(gallery.getByRole("status")).toHaveText(galleryStatus(1, 20));
 	await gallery.getByRole("button", { name: m.galleryPrevious }).click();
-	await expect(gallery.getByRole("status")).toHaveText("Kuva 20 / 20");
+	await expect(gallery.getByRole("status")).toHaveText(galleryStatus(20, 20));
 	const dots = gallery.getByRole("group", { name: m.galleryPagination });
 	await expect(dots.getByRole("button")).toHaveCount(20);
 	await dots
@@ -158,7 +164,7 @@ test("a twenty-image gallery stays compact and every image remains reachable on 
 			exact: true,
 		})
 		.click();
-	await expect(gallery.getByRole("status")).toHaveText("Kuva 10 / 20");
+	await expect(gallery.getByRole("status")).toHaveText(galleryStatus(10, 20));
 	const strip = gallery.getByRole("group", { name: m.galleryThumbnails });
 	await strip
 		.getByRole("button", {
@@ -167,7 +173,7 @@ test("a twenty-image gallery stays compact and every image remains reachable on 
 				.replace("{total}", "20"),
 		})
 		.click();
-	await expect(gallery.getByRole("status")).toHaveText("Kuva 20 / 20");
+	await expect(gallery.getByRole("status")).toHaveText(galleryStatus(20, 20));
 	const frame = await gallery.locator(".gallery-stage").boundingBox();
 	const box = await gallery.boundingBox();
 	if (!frame || !box) throw new Error("Gallery not visible");
@@ -234,7 +240,7 @@ test("swipes between images on touch and works with reduced motion", async ({
 			type: "touchEnd",
 			touchPoints: [],
 		});
-		await expect(page.getByRole("status")).toHaveText("Kuva 2 / 2");
+		await expect(page.getByRole("status")).toHaveText(galleryStatus(2, 2));
 		await expect(
 			page.getByRole("dialog", { name: m.galleryDialog }),
 		).toHaveCount(0);
@@ -253,7 +259,7 @@ test("keeps images reachable and the viewer closable if image loading fails", as
 		gallery.getByRole("link", { name: m.coverMissing }),
 	).toBeVisible();
 	await gallery.getByRole("button", { name: m.galleryNext }).click();
-	await expect(gallery.getByRole("status")).toHaveText("Kuva 2 / 2");
+	await expect(gallery.getByRole("status")).toHaveText(galleryStatus(2, 2));
 	await gallery.getByRole("link", { name: m.coverMissing }).click();
 	const viewer = page.getByRole("dialog", { name: m.galleryDialog });
 	await expect(viewer.getByText(m.coverMissing)).toBeVisible();
@@ -290,7 +296,7 @@ test("does not duplicate gallery controls after reload or history restoration", 
 		1,
 	);
 	await page.getByRole("button", { name: m.galleryNext }).click();
-	await expect(page.getByRole("status")).toHaveText("Kuva 2 / 2");
+	await expect(page.getByRole("status")).toHaveText(galleryStatus(2, 2));
 });
 
 test("loads previews without downloading every original before opening the viewer", async ({
@@ -367,7 +373,7 @@ test("a vertical touch gesture keeps the active image and scrolls the page", asy
 		await expect
 			.poll(() => page.evaluate(() => scrollY))
 			.toBeGreaterThan(before);
-		await expect(page.getByRole("status")).toHaveText("Kuva 1 / 2");
+		await expect(page.getByRole("status")).toHaveText(galleryStatus(1, 2));
 	} finally {
 		await context.close();
 	}

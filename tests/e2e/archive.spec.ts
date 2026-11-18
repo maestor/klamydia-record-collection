@@ -43,9 +43,7 @@ test("keeps results and offers retry and normal navigation when loading fails", 
 	);
 	await page.getByRole("link", { name: m.loadMore }).click();
 	await expect(page.locator(".post-card")).toHaveCount(12);
-	await expect(page.getByRole("status")).toContainText(
-		"lataaminen epäonnistui",
-	);
+	await expect(page.getByRole("status")).toContainText(m.archiveError);
 	await expect(
 		page.getByRole("link", { name: m.archiveFallback }),
 	).toHaveAttribute("href", "/archive?page=2");
@@ -336,16 +334,16 @@ test("filters by tag, loads matching posts, and returns to the filtered archive"
 	page,
 }) => {
 	await page.goto("/archive");
-	await page.getByText("Hae aihetunnisteilla").click();
+	await page.getByText(m.filterTags).click();
 	await page.getByRole("link", { name: "Punk (14)", exact: true }).click();
 	await expect(page).toHaveURL(/tag=punk/);
 	await expect(page.locator(".archive-tags details")).not.toHaveAttribute(
 		"open",
 		"",
 	);
-	await expect(page.getByText("Valittu aihetunniste:")).toBeVisible();
+	await expect(page.getByText(m.selectedTag)).toBeVisible();
 	await expect(
-		page.getByRole("link", { name: "Poista aihetunniste Punk" }),
+		page.getByRole("link", { name: m.removeTag("Punk") }),
 	).toBeVisible();
 	await expect(page.locator("#archive-list > li")).toHaveCount(12);
 	await page.getByRole("link", { name: m.loadMore }).click();
@@ -358,22 +356,22 @@ test("filters by tag, loads matching posts, and returns to the filtered archive"
 	await page.getByRole("link", { name: m.backArchive }).click();
 	await expect(page).toHaveURL(/through=2&tag=punk/);
 	await expect(page.locator("#archive-list > li")).toHaveCount(14);
-	await page.getByRole("link", { name: "Poista aihetunniste Punk" }).click();
+	await page.getByRole("link", { name: m.removeTag("Punk") }).click();
 	await expect(page).toHaveURL(/\/archive$/);
-	await expect(page.getByText("Valittu aihetunniste:")).toBeHidden();
+	await expect(page.getByText(m.selectedTag)).toBeHidden();
 });
 
 test("moves keyboard focus to the selected tag and continues to the results", async ({
 	page,
 }) => {
 	await page.goto("/archive");
-	const toggle = page.getByText("Hae aihetunnisteilla");
+	const toggle = page.getByText(m.filterTags);
 	await toggle.focus();
 	await page.keyboard.press("Enter");
 	await page.keyboard.press("Tab");
 	await expect(page.getByRole("link", { name: "Punk (14)" })).toBeFocused();
 	await page.keyboard.press("Enter");
-	const selected = page.getByRole("link", { name: "Poista aihetunniste Punk" });
+	const selected = page.getByRole("link", { name: m.removeTag("Punk") });
 	await expect(selected).toBeFocused();
 	await page.keyboard.press("Tab");
 	await expect(page.locator(".post-card-link").first()).toBeFocused();
@@ -388,12 +386,12 @@ test("focuses the selected tag without JavaScript", async ({ browser }) => {
 	try {
 		const page = await context.newPage();
 		await page.goto("/archive");
-		await page.getByText("Hae aihetunnisteilla").focus();
+		await page.getByText(m.filterTags).focus();
 		await page.keyboard.press("Enter");
 		await page.keyboard.press("Tab");
 		await page.keyboard.press("Enter");
 		await expect(
-			page.getByRole("link", { name: "Poista aihetunniste Punk" }),
+			page.getByRole("link", { name: m.removeTag("Punk") }),
 		).toBeFocused();
 		await page.keyboard.press("Tab");
 		await expect(page.locator(".post-card-link").first()).toBeFocused();

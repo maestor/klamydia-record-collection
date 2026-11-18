@@ -59,7 +59,13 @@ export const Layout: FC<LayoutProps> = ({
 			<body>
 				<header>
 					<a href="/">Klamydiakokoelma</a>
-					<nav aria-label={m.navigation}>
+					<nav
+						aria-label={m.navigation}
+						data-light-title={m.themeTitle.light}
+						data-dark-title={m.themeTitle.dark}
+						data-light-label={m.themeSwitchLabel(m.themeTitle.light)}
+						data-dark-label={m.themeSwitchLabel(m.themeTitle.dark)}
+					>
 						<div class="navigation-items desktop-navigation">
 							<a href="/archive">{m.archive}</a>
 							<a href="/about">{m.about}</a>
@@ -72,7 +78,7 @@ export const Layout: FC<LayoutProps> = ({
 						</div>
 						<details class="navigation-menu">
 							<summary>
-								<span class="visually-hidden">Valikko</span>
+								<span class="visually-hidden">{m.menu}</span>
 								<svg aria-hidden="true" viewBox="0 0 24 24">
 									<path d="M4 6h16M4 12h16M4 18h16" />
 								</svg>

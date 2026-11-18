@@ -3,6 +3,9 @@ export const locale = {
   locale: "fi-FI",
   timeZone: "Europe/Helsinki",
 } as const;
+const archivePageTemplate = "Sivu {page}";
+const archiveProgressTemplate = "Sivut {start}–{end}, {count} julkaisua";
+
 export const messages = {
   home: "Etusivu",
   homeTitle:
@@ -19,6 +22,9 @@ export const messages = {
   aboutImageAlt: "Klamydia-kaseteista tehty kello",
   followInstagram: "Seuraa instagramissa",
   siteImplementation: "Toteutus",
+  menu: "Valikko",
+  themeTitle: { light: "Teema: vaalea", dark: "Teema: tumma" },
+  themeSwitchLabel: (title: string) => `${title}. Vaihda teemaa`,
   navigation: "Päävalikko",
   archivePages: "Arkiston sivut",
   tags: "Tunnisteet",
@@ -56,8 +62,7 @@ export const messages = {
     `Julkaisun ${title} kuva ${index} / ${count}`,
   backArchive: "Takaisin arkistoon",
   elsewhere: "Aiheesta muualla",
-  discogsLink: (name: string) =>
-    name ? `Tutustu äänitteeseen (${name}) Discogsissa` : "Tutustu äänitteeseen Discogsissa",
+  discogsLink: (name: string) => (name ? `Tutustu äänitteeseen (${name})` : "Tutustu äänitteeseen"),
   source: "Alkuperäinen julkaisu",
   defaultDescription:
     "Klamydia-äänitekeräilijän levykokoelman esittely tarinoiden ja kuvien muodossa.",
@@ -70,12 +75,12 @@ export const messages = {
   archiveRetry: "Yritä uudelleen",
   archiveFallback: "Avaa seuraava sivu",
   archiveAddedTemplate: "Lisätty {count} julkaisua.",
-  archiveProgressTemplate: "Sivut {start}–{end}, {count} julkaisua",
-  archivePageTemplate: "Sivu {page}",
+  archiveProgressTemplate,
+  archivePageTemplate,
   archiveProgress: (start: number, end: number, count: number) =>
-    `Sivut ${start}–${end}, ${count} julkaisua`,
+    archiveProgressTemplate.replace("{start}", String(start)).replace("{end}", String(end)).replace("{count}", String(count)),
   newer: "Uudemmat",
-  page: (number: number) => `Sivu ${number}`,
+  page: (number: number) => archivePageTemplate.replace("{page}", String(number)),
 } as const;
 const dates = new Intl.DateTimeFormat(locale.locale, {
   timeZone: locale.timeZone,
