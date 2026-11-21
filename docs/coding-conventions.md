@@ -49,6 +49,8 @@ Keep page asset URLs in `src/views/layout.tsx` and the sitemap stylesheet URL in
 
 ## Verification and review
 
+Use the [clean-code-typescript skill](../.agents/skills/clean-code-typescript/SKILL.md) for application, script, and test changes. Start from a real caller or test scenario. Name the decision at the call site, validate unverified data at its boundary, and preserve the order of effects and the failures callers observe. In test helpers, use names and options that make each scenario readable where it is called.
+
 Protect observable behavior through `createApp` with an in-memory database and Testing Library. For a refactor, run the existing relevant tests before moving code and add characterization tests for uncovered contracts. Keep assertions on responses, accessible content, navigation, and security; avoid tests that merely check file structure or component wiring. Pure helper tests are appropriate for reusable deterministic rules when a public-route test would obscure the case.
 
 Use Playwright for browser interactions, keyboard/focus flows, progressive enhancement, and rendering risks. Use the matching dedicated Chromium headless shell with no browser channel, and close task-owned sessions. Inspect coverage gaps in touched files rather than inventing a percentage target.

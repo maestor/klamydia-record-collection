@@ -4,7 +4,13 @@ import sharp from "sharp";
 import { instagramReader } from "./instagram-access.js";
 import { fetchWithRetry } from "./instagram-fetch.js";
 
-type Options = {
+const MAX_IMPORT_POSTS = 1000;
+const MAX_IMAGES_PER_POST = 100;
+
+const MAX_IMAGE_DOWNLOAD_BYTES = 15_000_000;
+const MAX_IMAGE_INPUT_PIXELS = 40_000_000;
+
+type InstagramImportOptions = {
 	db: Client;
 	accountId: string;
 	token: string;
@@ -15,6 +21,82 @@ type Options = {
 	putImage?: (filename: string, bytes: Buffer) => Promise<void>;
 };
 
+async function downloadFullImage(
+	fetcher: typeof fetch,
+	mediaUrl: string,
+	postId: string,
+): Promise<Buffer> {
+	let url: URL;
+	try {
+		url = new URL(mediaUrl);
+	} catch {
+		throw new Error(`Invalid image source for post ${postId}.`);
+	}
+	if (
+		url.protocol !== "https:" ||
+		url.username ||
+		url.password ||
+		url.port ||
+		![".cdninstagram.com", ".fbcdn.net"].some((suffix) =>
+			url.hostname.endsWith(suffix),
+		)
+	)
+		throw new Error(`Invalid image source for post ${postId}.`);
+	let response: Response;
+	try {
+		response = await fetchWithRetry(fetcher, url, {});
+	} catch {
+		throw new Error(`Image download failed for post ${postId}.`);
+	}
+	if (!response.ok || !response.body)
+		throw new Error(
+			`Image download failed for post ${postId} (HTTP ${response.status}).`,
+		);
+	const chunks: Uint8Array[] = [];
+	let sizeBytes = 0;
+	try {
+		for await (const chunk of response.body) {
+			sizeBytes += chunk.length;
+			if (sizeBytes > MAX_IMAGE_DOWNLOAD_BYTES) throw new Error("size limit");
+			chunks.push(chunk);
+		}
+	} catch {
+		throw new Error(
+			`Image download failed or exceeded size limit for post ${postId}.`,
+		);
+	}
+	try {
+		const input = Buffer.concat(chunks);
+		const metadata = await sharp(input, {
+			limitInputPixels: MAX_IMAGE_INPUT_PIXELS,
+			failOn: "error",
+		}).metadata();
+		if (
+			!metadata.format ||
+			!["jpeg", "png", "webp"].includes(metadata.format) ||
+			!metadata.width ||
+			!metadata.height ||
+			(metadata.pages ?? 1) !== 1
+		)
+			throw new Error("Unsupported image.");
+		return await sharp(input, {
+			limitInputPixels: MAX_IMAGE_INPUT_PIXELS,
+			failOn: "error",
+		})
+			.rotate()
+			.resize({
+				width: 1440,
+				height: 1440,
+				fit: "inside",
+				withoutEnlargement: true,
+			})
+			.jpeg({ quality: 90 })
+			.toBuffer();
+	} catch {
+		throw new Error(`Invalid image for post ${postId}.`);
+	}
+}
+
 export async function importInstagram({
 	db,
 	accountId,
@@ -24,14 +106,14 @@ export async function importInstagram({
 	mediaId,
 	dryRun = false,
 	putImage,
-}: Options) {
+}: InstagramImportOptions) {
 	if (!dryRun && !putImage)
 		throw new Error("A media store is required for imports.");
 	if (
 		limit !== undefined &&
-		(!Number.isInteger(limit) || limit < 1 || limit > 1000)
+		(!Number.isInteger(limit) || limit < 1 || limit > MAX_IMPORT_POSTS)
 	)
-		throw new Error("Limit must be an integer from 1 to 1000.");
+		throw new Error(`Limit must be an integer from 1 to ${MAX_IMPORT_POSTS}.`);
 	if (mediaId !== undefined && (!/^\d+$/.test(mediaId) || limit !== undefined))
 		throw new Error("Use one numeric media ID or a limit, not both.");
 	const reader = instagramReader(accountId, token, fetcher);
@@ -45,9 +127,9 @@ export async function importInstagram({
 			: media;
 	if (mediaId && selected.length === 0)
 		throw new Error("The requested media ID was not found.");
-	if (selected.length > 1000)
+	if (selected.length > MAX_IMPORT_POSTS)
 		throw new Error(
-			"Import exceeds 1000 posts; use a bounded sample and revisit the work limit.",
+			`Import exceeds ${MAX_IMPORT_POSTS} posts; use a bounded sample and revisit the work limit.`,
 		);
 	if (new Set(selected.map((post) => post.id)).size !== selected.length)
 		throw new Error(
@@ -55,6 +137,11 @@ export async function importInstagram({
 		);
 	const statements: InStatement[] = [];
 	const counts = { created: 0, updated: 0, unchanged: 0 };
+	async function storeImage(bytes: Buffer) {
+		const filename = `${createHash("sha256").update(bytes).digest("hex")}.jpg`;
+		if (!dryRun && putImage) await putImage(filename, bytes);
+		return { filename, url: `/media/${filename}` };
+	}
 	for (const post of selected) {
 		if (
 			(post.caption !== undefined && typeof post.caption !== "string") ||
@@ -69,21 +156,13 @@ export async function importInstagram({
 				`Unsupported media type for post ${post.id}; no posts were published.`,
 			);
 		const children =
-			post.media_type === "IMAGE"
-				? [
-						{
-							id: post.id,
-							media_type: post.media_type,
-							media_url: post.media_url,
-						},
-					]
-				: await reader.getChildren(post.id);
+			post.media_type === "IMAGE" ? [post] : await reader.getChildren(post.id);
 		if (
 			!children.length ||
-			children.length > 100 ||
-			children.some(
-				(child) =>
-					child.media_type !== "IMAGE" || typeof child.media_url !== "string",
+			children.length > MAX_IMAGES_PER_POST ||
+			!children.every(
+				(child): child is typeof child & { media_url: string } =>
+					child.media_type === "IMAGE" && typeof child.media_url === "string",
 			)
 		)
 			throw new Error(
@@ -102,81 +181,7 @@ export async function importInstagram({
 			hash: string;
 		}[] = [];
 		for (const child of children) {
-			let url: URL;
-			try {
-				url = new URL(child.media_url as string);
-			} catch {
-				throw new Error(`Invalid image source for post ${post.id}.`);
-			}
-			if (
-				url.protocol !== "https:" ||
-				url.username ||
-				url.password ||
-				url.port ||
-				![".cdninstagram.com", ".fbcdn.net"].some((suffix) =>
-					url.hostname.endsWith(suffix),
-				)
-			)
-				throw new Error(`Invalid image source for post ${post.id}.`);
-			let response: Response;
-			try {
-				response = await fetchWithRetry(fetcher, url, {});
-			} catch {
-				throw new Error(`Image download failed for post ${post.id}.`);
-			}
-			if (!response.ok || !response.body)
-				throw new Error(
-					`Image download failed for post ${post.id} (HTTP ${response.status}).`,
-				);
-			const chunks: Uint8Array[] = [];
-			let size = 0;
-			try {
-				for await (const chunk of response.body) {
-					size += chunk.length;
-					if (size > 15_000_000) throw new Error("size limit");
-					chunks.push(chunk);
-				}
-			} catch {
-				throw new Error(
-					`Image download failed or exceeded size limit for post ${post.id}.`,
-				);
-			}
-			let image: Buffer;
-			try {
-				const input = Buffer.concat(chunks);
-				const metadata = await sharp(input, {
-					limitInputPixels: 40_000_000,
-					failOn: "error",
-				}).metadata();
-				if (
-					!metadata.format ||
-					!["jpeg", "png", "webp"].includes(metadata.format) ||
-					!metadata.width ||
-					!metadata.height ||
-					(metadata.pages ?? 1) !== 1
-				)
-					throw new Error("Unsupported image.");
-				image = await sharp(input, {
-					limitInputPixels: 40_000_000,
-					failOn: "error",
-				})
-					.rotate()
-					.resize({
-						width: 1440,
-						height: 1440,
-						fit: "inside",
-						withoutEnlargement: true,
-					})
-					.jpeg({ quality: 90 })
-					.toBuffer();
-			} catch {
-				throw new Error(`Invalid image for post ${post.id}.`);
-			}
-			async function storeImage(bytes: Buffer) {
-				const filename = `${createHash("sha256").update(bytes).digest("hex")}.jpg`;
-				if (!dryRun && putImage) await putImage(filename, bytes);
-				return { filename, url: `/media/${filename}` };
-			}
+			const image = await downloadFullImage(fetcher, child.media_url, post.id);
 			const original = await storeImage(image);
 			const previewBytes = await sharp(image)
 				.resize({

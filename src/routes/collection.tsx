@@ -14,13 +14,14 @@ import { ArchivePage } from "#views/pages/archive";
 import { HomePage } from "#views/pages/home";
 import { MessagePage } from "#views/pages/message";
 
-const PAGE_SIZE = 12;
+const ARCHIVE_PAGE_SIZE = 12;
+const HOME_POST_LIMIT = 6;
 
 export function createCollectionRoutes(db: Client, siteUrl: string) {
 	const app = new Hono();
 	app.get("/", async (c) => {
 		const [posts, counts] = await Promise.all([
-			listPosts(db, 6),
+			listPosts(db, { limit: HOME_POST_LIMIT }),
 			getCollectionCounts(db),
 		]);
 		return c.html(
@@ -37,17 +38,19 @@ export function createCollectionRoutes(db: Client, siteUrl: string) {
 		if (page <= start || page - start >= ARCHIVE_BATCH_LIMIT)
 			return c.text(m.invalidPage, 400);
 		const tag = c.req.query("tag") || undefined;
-		const rows = await listPosts(
-			db,
-			PAGE_SIZE + 1,
-			(page - 1) * PAGE_SIZE,
+		const posts = await listPosts(db, {
+			limit: ARCHIVE_PAGE_SIZE + 1,
+			offset: (page - 1) * ARCHIVE_PAGE_SIZE,
 			tag,
+		});
+		c.header(
+			"X-Archive-Count",
+			String(Math.min(posts.length, ARCHIVE_PAGE_SIZE)),
 		);
-		c.header("X-Archive-Count", String(Math.min(rows.length, PAGE_SIZE)));
-		c.header("X-Archive-Has-More", String(rows.length > PAGE_SIZE));
+		c.header("X-Archive-Has-More", String(posts.length > ARCHIVE_PAGE_SIZE));
 		return c.html(
 			<PostItems
-				posts={rows.slice(0, PAGE_SIZE)}
+				posts={posts.slice(0, ARCHIVE_PAGE_SIZE)}
 				page={start}
 				through={page}
 				tag={tag}
@@ -65,10 +68,14 @@ export function createCollectionRoutes(db: Client, siteUrl: string) {
 				400,
 			);
 		const { start, end } = selection;
-		const limit = (end - start + 1) * PAGE_SIZE;
+		const limit = (end - start + 1) * ARCHIVE_PAGE_SIZE;
 		const tag = c.req.query("tag") || undefined;
 		const [posts, tags] = await Promise.all([
-			listPosts(db, limit + 1, (start - 1) * PAGE_SIZE, tag),
+			listPosts(db, {
+				limit: limit + 1,
+				offset: (start - 1) * ARCHIVE_PAGE_SIZE,
+				tag,
+			}),
 			listArchiveTags(db),
 		]);
 		return c.html(

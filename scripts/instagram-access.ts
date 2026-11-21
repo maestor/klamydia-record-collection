@@ -9,12 +9,15 @@ try {
 		id: post.id,
 		date: post.timestamp,
 		type: post.media_type,
-		captionCharacters: post.caption?.length ?? 0,
+		captionCharacters:
+			typeof post.caption === "string" ? post.caption.length : 0,
 		permalink:
-			post.permalink && /^https:\/\/www\.instagram\.com\//.test(post.permalink)
+			typeof post.permalink === "string" &&
+			/^https:\/\/www\.instagram\.com\//.test(post.permalink)
 				? post.permalink
 				: undefined,
-		mediaAvailable: Boolean(post.media_url),
+		mediaAvailable:
+			typeof post.media_url === "string" && post.media_url.length > 0,
 	});
 	console.log(
 		JSON.stringify(
@@ -28,7 +31,8 @@ try {
 					children: result.carousel.children.map((child) => ({
 						id: child.id,
 						type: child.media_type,
-						mediaAvailable: Boolean(child.media_url),
+						mediaAvailable:
+							typeof child.media_url === "string" && child.media_url.length > 0,
 					})),
 				},
 			},

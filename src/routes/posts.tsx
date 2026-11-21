@@ -10,7 +10,7 @@ import {
 	getDiscogsReleases,
 	getImages,
 	getPost,
-	getTags,
+	listPostTags,
 } from "#repositories/posts";
 import { AboutPage } from "#views/pages/about";
 import { MessagePage } from "#views/pages/message";
@@ -55,7 +55,7 @@ export function createPostRoutes(db: Client, siteUrl: string) {
 			);
 		const [images, tags, discogsReleases] = await Promise.all([
 			getImages(db, slug),
-			getTags(db, slug),
+			listPostTags(db, slug),
 			getDiscogsReleases(db, slug),
 		]);
 		const context = parseArchiveRange(
