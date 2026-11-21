@@ -1,14 +1,41 @@
 import { fetchWithRetry } from "./instagram-fetch.js";
 
-export type Media = {
+type InstagramMediaItem = {
 	id: string;
-	timestamp: string;
 	media_type: string;
-	caption?: string;
-	permalink?: string;
-	media_url?: string;
+	media_url?: unknown;
 };
-export type Child = { id: string; media_type: string; media_url?: string };
+
+type InstagramPostMetadata = InstagramMediaItem & {
+	timestamp: string;
+	caption?: unknown;
+	permalink?: unknown;
+};
+
+const MAX_HISTORY_PAGES = 100;
+const MEDIA_PER_PAGE = 100;
+
+function isJsonObject(value: unknown): value is Record<string, unknown> {
+	return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function hasMediaIdentity(value: unknown): value is InstagramMediaItem {
+	return (
+		isJsonObject(value) &&
+		typeof value.id === "string" &&
+		/^\d+$/.test(value.id) &&
+		typeof value.media_type === "string"
+	);
+}
+
+function hasPostMetadata(value: unknown): value is InstagramPostMetadata {
+	return (
+		isJsonObject(value) &&
+		typeof value.timestamp === "string" &&
+		Number.isFinite(Date.parse(value.timestamp)) &&
+		hasMediaIdentity(value)
+	);
+}
 
 export function instagramReader(
 	accountId: string,
@@ -19,14 +46,14 @@ export function instagramReader(
 		throw new Error(
 			"Set a numeric INSTAGRAM_ACCOUNT_ID and a nonempty INSTAGRAM_ACCESS_TOKEN.",
 		);
-	async function pages<T>(path: string, fields: string): Promise<T[]> {
-		const items: T[] = [];
+	async function readPages(path: string, fields: string): Promise<unknown[]> {
+		const items: unknown[] = [];
 		const seen = new Set<string>();
 		let after: string | undefined;
-		for (let page = 0; page < 100; page++) {
+		for (let page = 0; page < MAX_HISTORY_PAGES; page++) {
 			const url = new URL(`https://graph.facebook.com/v26.0/${path}`);
 			url.searchParams.set("fields", fields);
-			url.searchParams.set("limit", "100");
+			url.searchParams.set("limit", String(MEDIA_PER_PAGE));
 			if (after) url.searchParams.set("after", after);
 			let response: Response;
 			try {
@@ -42,20 +69,20 @@ export function instagramReader(
 				throw new Error(
 					`Instagram request failed (HTTP ${response.status}); check token and account permissions.`,
 				);
-			let body: {
-				data?: unknown;
-				paging?: { next?: unknown; cursors?: { after?: unknown } };
-			};
+			let body: unknown;
 			try {
-				body = (await response.json()) as typeof body;
+				body = await response.json();
 			} catch {
 				throw new Error("Instagram returned invalid JSON.");
 			}
-			if (!Array.isArray(body.data))
+			if (!isJsonObject(body) || !Array.isArray(body.data))
 				throw new Error("Instagram returned an invalid media page.");
-			items.push(...(body.data as T[]));
-			if (!body.paging?.next) return items;
-			const cursor = body.paging.cursors?.after;
+			items.push(...body.data);
+			const paging = body.paging;
+			if (!isJsonObject(paging) || !paging.next) return items;
+			const cursor = isJsonObject(paging.cursors)
+				? paging.cursors.after
+				: undefined;
 			if (typeof cursor !== "string" || !cursor || seen.has(cursor))
 				throw new Error(
 					"Instagram returned an invalid or repeated pagination cursor.",
@@ -63,40 +90,26 @@ export function instagramReader(
 			seen.add(cursor);
 			after = cursor;
 		}
-		throw new Error("Stopped after 100 pages; history coverage is incomplete.");
+		throw new Error(
+			`Stopped after ${MAX_HISTORY_PAGES} pages; history coverage is incomplete.`,
+		);
 	}
 	async function getMedia() {
-		const media = await pages<Media>(
+		const media = await readPages(
 			`${accountId}/media`,
 			"id,caption,timestamp,media_type,media_url,permalink",
 		);
-		if (
-			media.some(
-				(item) =>
-					!item ||
-					!/^\d+$/.test(item.id) ||
-					typeof item.timestamp !== "string" ||
-					!Number.isFinite(Date.parse(item.timestamp)) ||
-					typeof item.media_type !== "string",
-			)
-		)
+		if (!media.every(hasPostMetadata))
 			throw new Error("Instagram returned invalid media metadata.");
 		return media;
 	}
 	async function getChildren(id: string) {
 		if (!/^\d+$/.test(id)) throw new Error("Invalid Instagram media ID.");
-		const children = await pages<Child>(
+		const children = await readPages(
 			`${id}/children`,
 			"id,media_type,media_url",
 		);
-		if (
-			children.some(
-				(item) =>
-					!item ||
-					!/^\d+$/.test(item.id) ||
-					typeof item.media_type !== "string",
-			)
-		)
+		if (!children.every(hasMediaIdentity))
 			throw new Error("Instagram returned invalid carousel metadata.");
 		return children;
 	}

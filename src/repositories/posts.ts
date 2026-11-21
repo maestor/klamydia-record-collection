@@ -33,11 +33,11 @@ export type PostImage = {
 	height: number | null;
 };
 
+type PostListQuery = { limit: number; offset?: number; tag?: string };
+
 export async function listPosts(
 	db: Client,
-	limit: number,
-	offset = 0,
-	tag?: string,
+	{ limit, offset = 0, tag }: PostListQuery,
 ) {
 	return (
 		await db.execute({
@@ -101,23 +101,16 @@ export async function getImages(
 		height: row.height === null ? null : Number(row.height),
 	}));
 }
-export async function getTags(db: Client, slug: string) {
+export async function listPostTags(db: Client, slug: string) {
 	return (
 		await db.execute({
 			sql: "SELECT t.normalized, t.display FROM tags t JOIN post_tags pt ON pt.tag_normalized = t.normalized WHERE pt.post_slug = ? ORDER BY t.normalized",
 			args: [slug],
 		})
-	).rows
-		.map((row) => ({
-			normalized: String(row.normalized),
-			display: String(row.display),
-			count: Number(row.post_count),
-			filterable: Number(row.post_count) < Number(row.archive_count),
-		}))
-		.sort(
-			(a, b) =>
-				b.count - a.count || a.display.localeCompare(b.display, "fi-FI"),
-		);
+	).rows.map((row) => ({
+		normalized: String(row.normalized),
+		display: String(row.display),
+	}));
 }
 
 export async function getAboutPost(db: Client): Promise<AboutPost | undefined> {

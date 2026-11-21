@@ -344,44 +344,68 @@ it("does not publish partial changes when a later image fails, and dry runs leav
 	}
 });
 
-it("rejects unsafe image sources and corrupt images without publishing posts", async () => {
-	const db = createClient({ url: "file::memory:" });
-	try {
-		await migrate(db);
-		let imageUrl = "http://images.fbcdn.net/file";
-		const fetcher: typeof fetch = async (input) =>
-			new URL(String(input)).hostname === "graph.facebook.com"
-				? Response.json({
+it.each([
+	{ mediaUrl: "not a URL", message: "Invalid image source" },
+	{ mediaUrl: "http://images.fbcdn.net/file", message: "Invalid image source" },
+	{ mediaUrl: 123, message: "missing or unsupported media" },
+	{
+		mediaUrl: "https://images.fbcdn.net/file",
+		imageResponse: () => new Response("not an image"),
+		message: "Invalid image for post 1",
+	},
+	{
+		mediaUrl: "https://images.fbcdn.net/file",
+		imageResponse: () => new Response(new Uint8Array(15_000_001)),
+		message: "Image download failed or exceeded size limit",
+	},
+	{
+		mediaUrl: "https://images.fbcdn.net/file",
+		imageResponse: () => {
+			throw new Error("network failure");
+		},
+		message: "Image download failed for post 1",
+	},
+])(
+	"rejects unusable images before uploading or publishing ($message)",
+	async ({ mediaUrl, imageResponse, message }) => {
+		const db = createClient({ url: "file::memory:" });
+		try {
+			await migrate(db);
+			const fetcher: typeof fetch = async (input) => {
+				if (new URL(String(input)).hostname === "graph.facebook.com")
+					return Response.json({
 						data: [
 							{
 								id: "1",
 								timestamp: "2024-01-01T00:00:00+0000",
 								media_type: "IMAGE",
 								permalink: "https://www.instagram.com/p/test/",
-								media_url: imageUrl,
+								media_url: mediaUrl,
 							},
 						],
-					})
-				: new Response("not an image");
-		const options = {
-			db,
-			putImage: async () => {},
-			accountId: "123",
-			token: "token",
-			fetcher,
-		};
-		await expect(importInstagram(options)).rejects.toThrow(
-			"Invalid image source",
-		);
-		imageUrl = "https://images.fbcdn.net/file";
-		await expect(importInstagram(options)).rejects.toThrow("Invalid image");
-		expect(
-			(await db.execute("SELECT count(*) AS n FROM posts")).rows[0].n,
-		).toBe(0);
-	} finally {
-		db.close();
-	}
-});
+					});
+				if (!imageResponse) throw new Error("Unexpected image request");
+				return imageResponse();
+			};
+			let uploads = 0;
+			await expect(
+				importInstagram({
+					db,
+					putImage: async () => {
+						uploads++;
+					},
+					accountId: "123",
+					token: "token",
+					fetcher,
+				}),
+			).rejects.toThrow(message);
+			expect(uploads).toBe(0);
+			expect((await db.execute("SELECT slug FROM posts")).rows).toEqual([]);
+		} finally {
+			db.close();
+		}
+	},
+);
 
 it("keeps existing posts when an upstream response is incomplete or unsupported", async () => {
 	const db = createClient({ url: "file::memory:" });

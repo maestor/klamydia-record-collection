@@ -136,3 +136,57 @@ it("retries a rate-limited request after the indicated delay", async () => {
 	expect(result.count).toBe(0);
 	expect(attempts).toBe(2);
 });
+
+it.each([
+	{ body: null, message: "invalid media page" },
+	{ body: { data: {} }, message: "invalid media page" },
+	{
+		body: { data: [{ id: 1, timestamp: "2024-01-01", media_type: "IMAGE" }] },
+		message: "invalid media metadata",
+	},
+	{
+		body: { data: [], paging: { next: "https://ignored.example/" } },
+		message: "invalid or repeated pagination cursor",
+	},
+])(
+	"reports malformed Instagram pages as operator errors ($message)",
+	async ({ body, message }) => {
+		await expect(
+			inspectInstagram("123", "token", async () => Response.json(body)),
+		).rejects.toThrow(message);
+	},
+);
+
+it("reports malformed carousel children during the access check", async () => {
+	await expect(
+		inspectInstagram("123", "token", async (input) =>
+			Response.json({
+				data: String(input).includes("/children?")
+					? [null]
+					: [
+							{
+								id: "1",
+								timestamp: "2024-01-01",
+								media_type: "CAROUSEL_ALBUM",
+							},
+						],
+			}),
+		),
+	).rejects.toThrow("invalid carousel metadata");
+});
+
+it("stops an incomplete history scan at the page limit", async () => {
+	let requests = 0;
+	const fetcher: typeof fetch = async () =>
+		Response.json({
+			data: [],
+			paging: {
+				next: "https://ignored.example/",
+				cursors: { after: String(++requests) },
+			},
+		});
+	await expect(inspectInstagram("123", "token", fetcher)).rejects.toThrow(
+		"Stopped after 100 pages; history coverage is incomplete.",
+	);
+	expect(requests).toBe(100);
+});
